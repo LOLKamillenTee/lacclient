@@ -360,13 +360,18 @@ ipcMain.handle("shots:folder", (e, file) => { if (insideInstances(String(file)))
 /* ---------- Dev: roles of players ---------- */
 ipcMain.handle("codes:make", async (_e, rank, count) => {   // every Dev may make one-time codes; the service keeps only their hashes
   const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
-  const r = await fetch(packs.base() + "/v1/codes", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(15000), body: JSON.stringify({ code, rank, count: Math.max(1, Math.min(20, count | 0)) }) });
+  const r = await fetch(packs.base() + "/v1/codes", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(15000), body: JSON.stringify({ code, rank, count: Math.max(1, Math.min(20, count | 0)), by: user() && user().name }) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return j.codes;
+});
+ipcMain.handle("devlog:get", async () => {
+  const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
+  const r = await fetch(packs.base() + "/v1/devlog", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code }) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return j.log;
 });
 ipcMain.handle("roles:get", async () => (await fetch(packs.base() + "/v1/roles", { signal: AbortSignal.timeout(10000) })).json());
 ipcMain.handle("roles:set", async (e, name, rank) => {
   const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
-  const r = await fetch(packs.base() + "/v1/roles", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code, name: String(name), rank: String(rank) }) });
+  const r = await fetch(packs.base() + "/v1/roles", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code, name: String(name), rank: String(rank), by: user() && user().name }) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return j.roles;
 });
 ipcMain.handle("sync:get", () => { try { return fs.readFileSync(SYNCFILE(), "utf8").trim(); } catch { return ""; } });
