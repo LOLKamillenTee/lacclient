@@ -1,0 +1,151 @@
+{
+ "mods": [
+  {
+   "id": "zV5r3pPn",
+   "title": "3D Skin Layers"
+  },
+  {
+   "id": "8shC1gFX",
+   "title": "BetterF3"
+  },
+  {
+   "id": "9s6osm5g",
+   "title": "Cloth Config API"
+  },
+  {
+   "id": "1IjD5062",
+   "title": "Continuity"
+  },
+  {
+   "id": "xv94TkTM",
+   "title": "Controlling"
+  },
+  {
+   "id": "UVtY3ZAC",
+   "title": "Enchantment Descriptions"
+  },
+  {
+   "id": "NNAgCjsB",
+   "title": "Entity Culling"
+  },
+  {
+   "id": "P7dR8mSH",
+   "title": "Fabric API"
+  },
+  {
+   "id": "Ha28R6CL",
+   "title": "Fabric Language Kotlin"
+  },
+  {
+   "id": "uXXizFIs",
+   "title": "FerriteCore"
+  },
+  {
+   "id": "5ZwdcRci",
+   "title": "ImmediatelyFast"
+  },
+  {
+   "id": "YL57xq9U",
+   "title": "Iris Shaders"
+  },
+  {
+   "id": "nvQzSEkH",
+   "title": "Jade"
+  },
+  {
+   "id": "fQEb0iXm",
+   "title": "Krypton"
+  },
+  {
+   "id": "JrrZfsph",
+   "title": "Lightweight Inventory Sorting"
+  },
+  {
+   "id": "gvQqBUqZ",
+   "title": "Lithium"
+  },
+  {
+   "id": "7tEfOcA7",
+   "title": "MezzConfig"
+  },
+  {
+   "id": "aC3cM3Vq",
+   "title": "Mouse Tweaks"
+  },
+  {
+   "id": "aaRl8GiW",
+   "title": "Prickle"
+  },
+  {
+   "id": "Bh37bMuy",
+   "title": "Reese's Sodium Options"
+  },
+  {
+   "id": "AANobbMI",
+   "title": "Sodium"
+  },
+  {
+   "id": "PtjYWJkn",
+   "title": "Sodium Extra"
+  },
+  {
+   "id": "kYuIpRLv",
+   "title": "Wavey Capes"
+  },
+  {
+   "id": "1eAoo2KR",
+   "title": "YetAnotherConfigLib (YACL)"
+  },
+  {
+   "id": "w7ThoJFB",
+   "title": "Zoomify (Zoom)"
+  }
+ ],
+ "resourcepacks": [
+  {
+   "id": "m3tqASqD",
+   "title": "Enchantment Glows"
+  },
+  {
+   "id": "A32gwfe8",
+   "title": "Enchantment Outlines"
+  },
+  {
+   "id": "dspVZXKP",
+   "title": "Fast Better Grass"
+  },
+  {
+   "id": "CZrLuVQo",
+   "title": "Low Shield"
+  },
+  {
+   "id": "RRxvWKNC",
+   "title": "Low On Fire"
+  },
+  {
+   "id": "oL18adaQ",
+   "title": "New Glowing Ores"
+  },
+  {
+   "id": "U5SedJ9S",
+   "title": "Enhanced Boss Bars"
+  }
+ ],
+ "shaders": [
+  {
+   "id": "Q1vvjJYV",
+   "title": "BSL Shaders"
+  }
+ ],
+ "rpOrder": [
+  "dspVZXKP",
+  "RRxvWKNC",
+  "oL18adaQ",
+  "A32gwfe8",
+  "CZrLuVQo",
+  "U5SedJ9S",
+  "m3tqASqD"
+ ],
+ "iris": "BSL_v10.1.8.zip",
+ "unknown": []
+}

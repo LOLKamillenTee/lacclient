@@ -1,0 +1,17 @@
+[
+  {
+    "loader": "fabric",
+    "mc": "26.3",
+    "file": "lac-fabric-26.3.jar"
+  },
+  {
+    "loader": "neoforge",
+    "mc": "26.3",
+    "file": "lac-neoforge-26.3.jar"
+  },
+  {
+    "loader": "forge",
+    "mc": "26.3",
+    "file": "lac-forge-26.3.jar"
+  }
+]

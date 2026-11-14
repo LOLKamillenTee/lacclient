@@ -1,0 +1,29 @@
+name: Mac-Launcher
+# Builds the macOS launcher (.dmg and .zip, universal) and adds it to the release v<version> that tools/ship.js created for Windows.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["launcher/**", ".github/workflows/mac-build.yml"]
+permissions:
+  contents: write
+jobs:
+  mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: launcher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run dist:mac
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          gh release view "v$VER" >/dev/null 2>&1 || gh release create "v$VER" --title "LAC $VER" --notes "Update" --target "$GITHUB_SHA"
+          gh release upload "v$VER" release/*.dmg release/*.zip release/latest-mac.yml --clobber

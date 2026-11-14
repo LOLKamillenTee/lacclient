@@ -1,0 +1,86 @@
+{
+  "name": "lac-launcher",
+  "version": "0.1.55",
+  "main": "main.js",
+  "description": "LAC Launcher",
+  "author": "LAC",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:mac": "electron-builder --mac --universal --publish never"
+  },
+  "dependencies": {
+    "adm-zip": "^0.4.16",
+    "electron-updater": "^6.8.11",
+    "minecraft-launcher-core": "^3.18.2",
+    "msmc": "^5.0.5"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "dev.lac.launcher",
+    "productName": "LAC Launcher",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "core.js",
+      "store.js",
+      "share.js",
+      "packs.js",
+      "skins.js",
+      "preload.js",
+      "index.html",
+      "update.json",
+      "lang.js",
+      "design.css",
+      "skinview.js",
+      "capes/**",
+      "meshes/**",
+      "entities/**",
+      "helper/**",
+      "splash.html",
+      "catalog.json",
+      "defaults.json",
+      "logo.png",
+      "logo-small.png",
+      "previews/**",
+      "fonts/**",
+      "dist/**",
+      "build/icon.png"
+    ],
+    "asarUnpack": [
+      "dist/**",
+      "helper/**"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.games",
+      "identity": null,
+      "artifactName": "LAC-Launcher-${version}-mac.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "LAC-Launcher-Setup-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "https://github.com/owner/repo/releases/latest/download"
+    }
+  }
+}

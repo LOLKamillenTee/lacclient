@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src https: data: blob:">
+<title>LAC Launcher</title>
+<style>
+:root{--bg:#09090e;--side:#0d0d14;--card:#13131d;--card2:#1a1a27;--line:#23232f;--fg:#ecedf6;--mut:#8b8ba6;--a:#7c5cff;--b:#00d4ff;--ok:#6cf5a4;--bad:#ff8da1;--gold:#ffd24a;--r:18px}
+*{box-sizing:border-box}*{-webkit-user-select:none;user-select:none;-webkit-user-drag:none}input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 "LacInter","Segoe UI",system-ui,sans-serif;letter-spacing:-.005em;-webkit-font-smoothing:antialiased}
+#app{display:flex;height:100vh}
+aside{width:224px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 8px 18px}.brand img{width:34px;height:34px}.brand b{font-size:20px;letter-spacing:4px;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;color:transparent}
+nav button{display:flex;align-items:center;gap:11px;width:100%;background:none;border:0;color:var(--mut);padding:10px 12px;border-radius:10px;cursor:pointer;font:inherit;text-align:left;margin-bottom:3px;position:relative}
+nav button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button:hover{background:var(--card);color:var(--fg)}nav button.on{background:var(--card2);color:var(--fg)}nav button.on:before{content:"";position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:3px;background:linear-gradient(var(--a),var(--b))}
+.sp{flex:1}.userbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}.userbox b{display:block}.userbox .mut{font-size:12px}
+main{flex:1;overflow:auto;padding:26px 30px}.page{display:none}.page.on{display:block}
+h2{margin:0 0 4px;font-size:22px}.sub{color:var(--mut);margin:0 0 18px}h3{margin:0 0 10px;font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}.mut{color:var(--mut)}.ok{color:var(--ok)}.bad{color:var(--bad)}.gold{color:var(--gold)}
+.cols{display:grid;grid-template-columns:minmax(300px,1fr) minmax(340px,1.15fr);gap:20px;align-items:start}
+button{font:inherit;cursor:pointer}.btn{background:var(--card2);border:1px solid var(--line);color:var(--fg);padding:8px 14px;border-radius:10px}.btn:hover{border-color:#3a3a55}.btn:disabled{opacity:.4;cursor:default}
+.btn.p{background:linear-gradient(90deg,var(--a),var(--b));border:0;color:#fff;font-weight:600;padding:10px 20px}.btn.d{color:var(--bad);border-color:#5d2b3a}.btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+input[type=color]{width:46px;height:38px;padding:3px;cursor:pointer}input,select{background:#0c0c13;border:1px solid var(--line);color:var(--fg);padding:9px 11px;border-radius:10px;font:inherit;min-width:0}input:focus,select:focus{outline:none;border-color:var(--a)}
+label.f{display:block;color:var(--mut);font-size:12px;margin:12px 0 5px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:0}
+.seg{display:inline-flex;background:#0c0c13;border:1px solid var(--line);border-radius:11px;padding:3px}.seg button{background:none;border:0;color:var(--mut);padding:6px 14px;border-radius:8px}.seg button.on{background:linear-gradient(90deg,var(--a),var(--b));color:#fff}
+.chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--card2);border:1px solid var(--line);color:var(--mut)}.chip.fabric{color:#e7d9a6}.chip.neoforge{color:#ffb07a}.chip.forge{color:#9bb6ff}
+.pcard{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card2);margin-bottom:8px;cursor:pointer}.pcard:hover{border-color:#3a3a55}.pcard.on{border-color:var(--a);box-shadow:0 0 0 1px var(--a) inset}
+.pcard .ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--a),var(--b));display:grid;place-items:center;font-weight:700}
+.steps{display:flex;gap:6px;margin:14px 0 8px}.step{flex:1;text-align:center;font-size:11px;color:var(--mut);padding:5px 0;border-radius:8px;background:#0c0c13;border:1px solid var(--line)}.step.done{color:var(--ok);border-color:#244a38}.step.cur{color:#fff;border-color:var(--a);background:#1a1530}
+.bar{height:10px;background:#0c0c13;border:1px solid var(--line);border-radius:10px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));transition:width .25s}
+#log{display:none;height:150px;overflow:auto;background:#08080d;border-radius:10px;padding:10px;font:11px Consolas,monospace;color:var(--mut);white-space:pre-wrap;margin-top:10px}
+.item{display:flex;gap:12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line)}.item img{width:40px;height:40px;border-radius:9px;background:var(--card2)}
+.cos{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+.cc{background:var(--card2);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer}.cc:hover{border-color:#3a3a55}.cc.sel{border-color:var(--a);box-shadow:0 0 0 1px var(--a) inset}.cc.eq{border-color:var(--ok)}
+.cc .th{aspect-ratio:4/3;background:#10101a;display:grid;place-items:center;overflow:hidden}.cc .th img{width:100%;height:100%;object-fit:cover}.cc .meta{padding:9px 11px}.cc.lock .th{opacity:.85}
+.sw{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);padding:0}.sw.on{border-color:#fff}
+.prev{position:sticky;top:0}.prev .big{aspect-ratio:4/3;border-radius:12px;background:#10101a;overflow:hidden;margin-bottom:12px}.prev .big img{width:100%;height:100%;object-fit:cover}
+.badge{display:inline-block;width:26px;height:26px;vertical-align:middle;-webkit-mask:url(logo-small.png) center/contain no-repeat;mask:url(logo-small.png) center/contain no-repeat}
+@keyframes hue{to{filter:hue-rotate(360deg)}}@keyframes pl{50%{opacity:.35}}@keyframes sl{0%{background-position:0 0}50%{background-position:100% 0}100%{background-position:0 0}}
+.toast{position:fixed;right:24px;bottom:24px;background:var(--card2);border:1px solid var(--line);padding:12px 16px;border-radius:12px;max-width:380px;display:none;box-shadow:0 10px 40px #0008}
+
+.card,.pr,.modal .box,.menu,.toast,.userbox{backdrop-filter:blur(14px);box-shadow:0 1px 0 #ffffff08 inset,0 8px 30px #00000040}
+.card,.pr{border-color:#ffffff0f;background:linear-gradient(180deg,#171722,#12121b)}
+.btn,.seg,.seg button,input,select,textarea,.stbtn,.icb,.btn.p{border-radius:12px}.btn.p,.stbtn{box-shadow:0 6px 18px #7c5cff40;transition:transform .12s,box-shadow .12s}.btn.p:hover,.stbtn:hover{transform:translateY(-1px);box-shadow:0 8px 22px #7c5cff66}
+.btn,.pcard,.cc,nav button,.icb{transition:background .15s,border-color .15s,transform .12s}.cc:hover,.pcard:hover{transform:translateY(-2px)}
+nav button{border-radius:12px}h2{font-weight:650;letter-spacing:-.02em}h3{font-weight:600}.brand b{letter-spacing:3px}
+::-webkit-scrollbar{width:10px}::-webkit-scrollbar-thumb{background:#2a2a3a;border-radius:10px;border:3px solid transparent;background-clip:padding-box}::-webkit-scrollbar-track{background:transparent}
+@font-face{font-family:"LacInter";src:url(fonts/inter.ttf);font-weight:400 500}@font-face{font-family:"LacInter";src:url(fonts/inter-semibold.ttf);font-weight:600 800}@font-face{font-family:"LacPoppins";src:url(fonts/poppins.ttf)}@font-face{font-family:"LacRighteous";src:url(fonts/righteous.ttf)}@font-face{font-family:"LacAudiowide";src:url(fonts/audiowide.ttf)}@font-face{font-family:"LacPress";src:url(fonts/pressstart.ttf)}
+.fx{display:inline-block;font-weight:700;font-size:20px}.fx span{display:inline-block}
+@keyframes wv{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}@keyframes tw{0%,100%{transform:rotate(-8deg) translateY(2px)}50%{transform:rotate(8deg) translateY(-3px)}}
+@keyframes gl{0%,100%{text-shadow:0 0 2px currentColor}50%{text-shadow:0 0 12px currentColor,0 0 22px currentColor}}@keyframes sh{0%{background-position:200% 0}100%{background-position:-100% 0}}
+.range{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}.range span{width:44px;color:var(--mut)}.range input{flex:1;padding:0;accent-color:var(--a)}.range b{width:38px;text-align:right}
+.lock{opacity:.5;pointer-events:none}
+.plus{width:38px;height:38px;border-radius:12px;border:0;background:linear-gradient(90deg,var(--a),var(--b));color:#fff;font-size:22px;line-height:1;display:grid;place-items:center}
+.menu{position:absolute;right:0;top:46px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:6px;min-width:230px;z-index:20;box-shadow:0 12px 40px #000a;display:none}.menu.on{display:block}
+.menu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--fg);padding:10px 12px;border-radius:8px}.menu button:hover{background:var(--card)}.menu small{display:block;color:var(--mut);font-size:11px}
+.pr{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}.pr .top{display:flex;align-items:center;gap:14px}
+.pr .ic{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--a),var(--b));display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
+.pr .nm{font-weight:600;font-size:15px}.pr .meta{font-size:12px;color:var(--mut);display:flex;gap:10px;flex-wrap:wrap;margin-top:3px}
+.stbtn{min-width:150px;padding:10px 16px;border-radius:11px;border:0;font-weight:600;color:#fff;background:linear-gradient(90deg,var(--a),var(--b))}.stbtn.busy{background:var(--card2);border:1px solid var(--line);color:var(--fg);cursor:default}.stbtn.stop{background:#5d2b3a;color:#ffd3dc}.stbtn:disabled{opacity:.45;cursor:default}
+.icb{width:38px;height:38px;border-radius:10px;background:var(--card2);border:1px solid var(--line);color:var(--fg);display:grid;place-items:center}.icb:hover{border-color:#3a3a55}.icb svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pr .bar{margin-top:12px;height:6px;display:none}.pr.act .bar{display:block}
+.modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:50}.modal.on{display:grid}.modal .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(520px,92vw);max-height:90vh;overflow:auto}
+.modal h3{font-size:17px;margin:0 0 4px}textarea{width:100%;background:#0c0c13;border:1px solid var(--line);color:var(--fg);padding:10px;border-radius:10px;font:12px Consolas,monospace;min-height:110px;resize:vertical}
+.ramrow{display:flex;gap:10px;align-items:center}.ramrow input[type=range]{flex:1;accent-color:var(--a);padding:0}.ramrow input[type=number]{width:84px}
+
+
+#app{display:flex;height:100vh}
+.rail{width:92px;background:linear-gradient(180deg,#10162b,#0c1020);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:stretch;padding:12px 8px;gap:2px}
+.rail .logo{display:grid;place-items:center;height:54px}.rail .logo img{width:36px;height:36px}
+.rail nav{display:flex;flex-direction:column;gap:6px}html,body{overflow:hidden}.rail{height:100vh;min-height:0}.rail nav:first-of-type{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}.rail .sp{flex:0 0 4px}main{overflow-x:hidden}
+.rail nav button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:10px;font-size:11px;margin:0;width:100%}
+.rail nav button svg{width:24px;height:24px}.rail nav button{padding:6px 2px}.rail nav{gap:2px}.rail nav button svg{width:21px;height:21px}
+.rail nav button.on{background:#1a2750;box-shadow:0 0 0 1px #3b5bd9 inset;color:#fff}.rail nav button.on:before{display:none}
+.col{flex:1;display:flex;flex-direction:column;min-width:0}
+.top{display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0d111d}.ttl{font-size:18px;letter-spacing:.5px}
+.acct{position:relative;display:flex;align-items:center;gap:8px;padding:5px 10px 5px 6px;border:1px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer}.acct img{width:28px;height:28px;border-radius:6px;background:var(--card2)}
+.acct .menu{top:44px;min-width:210px}
+main{flex:1;overflow:auto;padding:22px 26px}
+.hero{display:grid;grid-template-columns:minmax(380px,1fr) 320px;gap:22px;min-height:100%}
+.stage{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:1px solid var(--line);border-radius:16px;background:radial-gradient(circle at 50% 35%,#16214a 0,#0c1020 70%);padding:20px;overflow:hidden}
+.ntag{font-size:22px;font-weight:700;background:#0008;border-radius:8px;padding:4px 12px;display:flex;align-items:center;gap:8px;min-height:38px}
+.avwrap{height:260px;display:grid;place-items:center}.avwrap img{height:260px;image-rendering:auto;filter:drop-shadow(0 10px 18px #000a)}
+.launch{position:relative;display:flex;gap:0;width:min(420px,100%)}
+.lbtn{flex:1;padding:12px 16px;border:1px solid #3b5bd9;border-radius:10px 0 0 10px;background:linear-gradient(180deg,#1b2b63,#152150);color:#fff;text-align:center}.lbtn b{display:block;font-size:20px}.lbtn small{display:block;opacity:.7}
+.lbtn.stop{background:#4d2331;border-color:#a04a63}.lbtn.busy{opacity:.85;cursor:default}.lbtn:disabled{opacity:.5;cursor:default}
+.lcar{width:54px;border:1px solid #3b5bd9;border-left:0;border-radius:0 10px 10px 0;background:#152150;color:#fff;font-size:18px}
+.menu.up{top:auto;bottom:62px;left:0;right:0;min-width:0}
+.hbar{width:min(420px,100%);height:6px;background:#0c0c13;border:1px solid var(--line);border-radius:6px;overflow:hidden}.hbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));transition:width .25s}
+.side{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:16px;align-self:start}
+.prow{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card2);margin-bottom:8px;cursor:pointer}.prow:hover{border-color:#3a3a55}.prow.on{border-color:#3b5bd9;box-shadow:0 0 0 1px #3b5bd9 inset}
+.prow .ic{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--a),var(--b));display:grid;place-items:center;font-weight:700}.prow .nm{font-weight:600}.prow .meta{font-size:11px;color:var(--mut)}
+.plus.sm{width:32px;height:32px;font-size:20px;border-radius:9px}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}.bun{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}.bun.ok{border-color:#2e6b52}.bun .imgs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.bun .imgs img{width:44px;height:33px;border-radius:8px;background:var(--card2);object-fit:cover}.bun.lockd .imgs img{opacity:.45}.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.tile{padding:11px 4px;text-align:center;border:1px solid var(--line);border-radius:6px;background:#12172b;color:var(--fg);font-weight:700;font-size:13px;letter-spacing:.5px;cursor:pointer;text-transform:uppercase;min-height:40px}
+.tile{text-transform:none;letter-spacing:.2px;border-radius:12px;font-weight:600;background:#10162b;transition:border-color .15s,background .15s}.tile:hover{border-color:#3b5bd9}.tile.on{border-color:#4b6cf0;background:#18204a}.tile.off{opacity:.3;cursor:default;pointer-events:none}.tile span{display:inline-block}
+.mask{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:80}.mask.on{display:grid}.mask .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(440px,92vw)}
+.sk{display:grid;grid-template-columns:260px 1fr;gap:22px}.skp{text-align:center}.skp canvas{image-rendering:pixelated;background:radial-gradient(circle at 50% 40%,#16214a,#0c1020 75%);border:1px solid var(--line);border-radius:16px;width:100%;height:auto}
+.sklib{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}.skc{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer;position:relative}.skc:hover{border-color:#3a3a55}.skc.sel{border-color:var(--a);box-shadow:0 0 0 1px var(--a)}.skc canvas{image-rendering:pixelated;width:64px;height:auto}.skc b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.capes{display:flex;flex-wrap:wrap;gap:10px}.cp{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;cursor:pointer;width:84px;font-size:11px}.cp.on{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}.cp canvas{image-rendering:pixelated;width:40px;height:auto;display:block;margin:0 auto 4px}
+.frow{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:8px}.frow img{width:34px;height:34px;border-radius:8px}.dot{width:10px;height:10px;border-radius:50%;background:#555}.dot.online{background:var(--ok)}.dot.afk{background:var(--gold)}
+::-webkit-scrollbar{display:none;width:0;height:0}*{scrollbar-width:none}.shgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}.shc{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}.shc img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#10101a}.shc .row{padding:8px 10px;gap:8px;align-items:center}.shc .n{font-size:11px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dtabs{display:flex;gap:6px;margin:14px 0 10px;flex-wrap:wrap}.dtabs button{background:var(--card2);border:1px solid var(--line);color:var(--mut);padding:6px 12px;border-radius:10px}.dtabs button.on{color:#fff;border-color:var(--a);background:#1a2750}.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.dt{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;cursor:pointer;position:relative}.dt.off{opacity:.45}.dt.lock{cursor:default}.dt:hover{border-color:#3a3a55}.dt img,.dt .l{width:40px;height:40px;border-radius:9px;margin:0 auto 6px;display:block;object-fit:cover}.dt .l{background:linear-gradient(135deg,var(--a),var(--b));color:#fff;font-weight:700;display:grid;place-items:center}.dt b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dt small{color:var(--mut);font-size:11px}
+</style><link rel="stylesheet" href="design.css"></head><body><div id="app">
+<aside class="rail">
+ <div class="logo"><img src="logo-small.png" alt="LAC"></div>
+ <div class="rcats" id="rcats">
+  <button data-cat="play" class="on" title="Spielen"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg><span>Spielen</span></button>
+  <button data-cat="style" title="Aussehen"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span>Aussehen</span></button>
+  <button data-cat="social" title="Sozial"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1.5A4.5 4.5 0 0 1 7 14h4a4.5 4.5 0 0 1 4.5 4.5V20M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.3A4.5 4.5 0 0 1 21.5 18.5V20"/></svg><span>Sozial</span></button>
+  <button data-cat="more" title="Mehr"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg><span>Mehr</span></button>
+ </div>
+ <nav><i class="rind"></i>
+  <button data-c="play" data-p="play" class="on"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg><span>Spielen</span></button>
+  <button data-c="play" data-p="prof"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/></svg><span>Profile</span></button>
+  <button data-c="play" data-p="lp"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4"/></svg><span>Modpacks</span></button>
+  <button data-c="play" data-p="mods"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg><span>Mods</span></button>
+  <button data-c="style" data-p="cos"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span>Cosmetics</span></button>
+  <button data-c="style" data-p="bundles"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8v12M3 13h18M12 8c-2-4-6-4-6-1s4 1 6 1zM12 8c2-4 6-4 6-1s-4 1-6 1z"/></svg><span>Bundles</span></button>
+  <button data-c="style" data-p="shop"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Shop</span></button>
+  <button data-c="style" data-p="style"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span>Stil</span></button>
+  <button data-c="style" data-p="skins"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M5 21v-3a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v3"/></svg><span>Skins</span></button>
+  <button data-c="social" data-p="friends"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1.5A4.5 4.5 0 0 1 7 14h4a4.5 4.5 0 0 1 4.5 4.5V20M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.3A4.5 4.5 0 0 1 21.5 18.5V20"/></svg><span>Freunde</span></button>
+  <button data-c="social" data-p="shots"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg><span>Fotos</span></button>
+  <button data-c="more" data-p="dev" id="devnav" style="display:none"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg><span>Dev</span></button>
+  <button data-c="more" data-p="plus"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span>LAC+</span></button>
+  <button data-c="more" data-p="dl"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></svg><span>Client</span></button>
+ </nav>
+ <div class="sp"></div>
+ <nav><i class="rind"></i><button data-p="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Einstellungen</span></button></nav>
+</aside>
+<div class="col">
+<header class="top">
+ <div class="tc" id="tfr"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1.5A4.5 4.5 0 0 1 7 14h4a4.5 4.5 0 0 1 4.5 4.5V20M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.3A4.5 4.5 0 0 1 21.5 18.5V20"/></svg><div><small>Freunde online</small><b id="tfrn">0</b></div></div>
+ <div class="tc" id="tchip"><i class="spin"></i><div class="tl"><b id="tchipt">Lade</b><small id="tchips"></small></div></div>
+ <div class="sp"></div>
+ <div class="acct" id="acct"><div class="at"><b id="uname">Nicht angemeldet</b><small id="ubal">Cosmetics offline nutzbar</small></div><img id="avatar" alt="">
+  <div class="menu" id="amenu" style="right:0;top:54px"><button id="login">Mit Microsoft anmelden</button><button id="login2">Mit Code anmelden<small>Falls Microsoft keinen Code per Mail schickt</small></button><button id="logout" style="display:none">Abmelden</button></div></div>
+ <div class="wc"><button id="wmin" title="Minimieren"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><button id="wmax" title="Maximieren"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button><button id="wx" class="x" title="Schließen"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+</header>
+<main>
+
+<section class="page on" id="play">
+ <div class="hbg"><div class="aur a1"></div><div class="aur a2"></div><div class="hpic" id="hpic"></div><div class="hshade"></div></div>
+ <div class="hl">
+  <div class="hkick rise" style="--i:0"><i></i><span id="hkick">LAC Client</span></div>
+  <h1 id="htitle" class="rise" style="--i:1">LAC Client</h1>
+  <p class="hdesc rise" id="hdesc" style="--i:2"></p>
+  <div class="hbtns rise" style="--i:3">
+   <button class="lbtn" id="hgo"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg><b id="hgot">Starten</b></button>
+   <button class="pill" id="hset"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Anpassen</button>
+   <div class="hpickwrap"><button class="pill" id="hpick"><span id="hsub">Profil</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button><div class="menu" id="hmenu"></div></div>
+  </div>
+  <div class="hprog rise" style="--i:4"><div class="hbar"><i id="hfill"></i></div><div id="hlabel"></div></div>
+ </div>
+ <div class="hr rise" style="--i:2">
+  <div class="ntag"><span class="badge" id="hbadge"></span><span class="fx" id="hname">Dein Name</span></div>
+  <div class="avwrap"><canvas id="hskinv"></canvas><div class="morphcard" id="morph1" style="display:none"></div><img id="havatar" alt="" hidden></div>
+  <div class="eqstrip" id="eqstrip"></div>
+  <button class="pill sm" id="hskin"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M5 21v-3a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v3"/></svg>Skin ändern</button>
+ </div>
+ <div class="hfoot rise" style="--i:5"><div id="hlist" hidden></div><button class="plus sm" id="hnew" title="Profil hinzufügen">+</button><span style="flex:1"></span><button class="pill sm" id="hlog">Protokoll anzeigen</button></div>
+</section>
+
+<section class="page" id="shop">
+ <div class="row"><h2 class="grow">Shop</h2><div class="chip" style="font-size:13px;padding:6px 14px"><span class="gold" id="shopcoins">0 Coins</span></div></div>
+ <p class="sub">Hier kaufst du Cosmetics für Coins. Coins gibt es nur beim Spielen in LAC Modpacks: 2 pro Minute, bis 240 am Tag. Bundles, LAC+ und Rang-Cosmetics sind nicht im Shop.</p>
+ <div class="row" id="shoptypes" style="gap:8px;margin-bottom:18px;flex-wrap:wrap"></div>
+ <div class="cos" id="shopgrid"></div>
+</section>
+
+<section class="page" id="prof"><div class="row" style="position:relative;margin-bottom:6px"><h2 class="grow">Profile</h2><button class="plus" id="padd" title="Profil hinzufügen">+</button>
+  <div class="menu" id="pmenu"><button id="m-new">Neues Profil erstellen<small>Loader, Version und Name wählen</small></button><button id="m-imp">Profil importieren<small>Mit Code oder ZIP-Datei</small></button><button id="m-pack">Modpack von Modrinth<small>Mit passendem LAC-Mod</small></button></div></div>
+ <p class="sub">Jedes Profil ist ein Modpack mit eigenem Loader, eigenen Mods und eigenem Arbeitsspeicher.</p>
+ <div id="plist"></div>
+</section>
+
+<div class="modal" id="mnew"><div class="box"><h3>Neues Profil</h3><p class="mut" style="margin:0 0 6px">Fabric API wird bei Fabric automatisch installiert.</p>
+ <input id="pname" placeholder="Name, z.B. PvP Pack" style="width:100%"><label class="f">Loader</label><div class="seg" id="ploader"><button data-l="fabric" class="on">Fabric</button><button data-l="neoforge">NeoForge</button><button data-l="forge">Forge</button></div>
+ <label class="f">Minecraft-Version</label><select id="pver" style="width:100%"></select><div class="mut" style="font-size:12px;margin-top:8px" id="phint"></div>
+ <label class="row" id="prow" style="gap:8px;margin-top:14px;align-items:flex-start"><input type="checkbox" id="ppreset" checked style="margin-top:3px"><span>Empfohlene Mods vorinstallieren<br><span class="mut" style="font-size:12px">Sodium, Iris, Lithium und weitere Performance-Mods, Optik-Mods, Wavey Capes, Mouse Tweaks, BetterF3 und Inventar-Sortierung. Ohne Haken kommt nur Fabric API.</span></span></label><div class="mut" id="pstat" style="font-size:12px;margin-top:8px"></div>
+ <div class="row" style="margin-top:18px;justify-content:flex-end"><button class="btn" data-close>Abbrechen</button><button class="btn p" id="pcreate">Erstellen</button></div></div></div>
+
+<div class="modal" id="mpack"><div class="box" style="width:min(640px,94vw)"><h3>Modpacks von Modrinth</h3><p class="mut" style="margin:0 0 8px">Beim Start kommt automatisch der LAC-Mod in der passenden Version für Loader und Minecraft-Version des Packs hinein.</p>
+ <div class="row" style="gap:8px"><input id="pq" class="grow" placeholder="Modpack suchen"><button class="btn p" id="pgo">Suchen</button></div>
+ <div class="row" id="ploaders" style="gap:6px;margin-top:10px"><button class="btn sm p" data-pl="">Alle</button><button class="btn sm" data-pl="fabric">Fabric</button><button class="btn sm" data-pl="neoforge">NeoForge</button><button class="btn sm" data-pl="forge">Forge</button></div>
+ <label class="row" style="gap:8px;margin-top:10px"><input type="checkbox" id="ponly"><span>Nur Packs, für die es den LAC-Mod gibt</span></label>
+ <div id="pres" style="margin-top:10px;max-height:50vh;overflow:auto"></div><div class="mut" id="pmsg" style="font-size:12px;margin-top:8px"></div>
+ <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn" data-close>Schließen</button></div></div></div>
+
+<div class="modal" id="mimp"><div class="box"><h3>Profil importieren</h3><p class="mut" style="margin:0 0 10px">Mods und Mod-Einstellungen, aber keine Cosmetics.</p>
+ <label class="f" style="margin-top:0">Profilcode</label><textarea id="icode" placeholder="LACP1:…"></textarea>
+ <div class="row" style="margin-top:10px"><button class="btn p" id="icodego">Mit Code importieren</button><span class="mut">oder</span><button class="btn" id="izip">ZIP-Datei wählen…</button></div><div class="mut" id="imsg" style="margin-top:10px;font-size:12px"></div>
+ <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn" data-close>Schließen</button></div></div></div>
+
+<div class="modal" id="mlog"><div class="box" style="width:min(760px,94vw)"><h3>Protokoll</h3><p class="mut" style="margin:0 0 8px">Alles, was beim Start passiert ist. Bei Problemen bitte diesen Text mitschicken.</p><textarea id="logtext" readonly style="min-height:320px"></textarea><div class="row" style="margin-top:10px"><button class="btn" id="logcopy">Kopieren</button><button class="btn" id="logdir">Ordner öffnen</button><span class="grow"></span><button class="btn p" data-close>Schließen</button></div></div></div>
+<div class="modal" id="mdet"><div class="box" id="mdetbox" style="width:min(760px,94vw);max-height:88vh;overflow:auto"></div></div>
+<div class="modal" id="mset"><div class="box" id="msetbox"></div></div>
+<div class="modal" id="mshare"><div class="box"><h3>Profil teilen</h3><p class="mut" style="margin:0 0 10px">Ohne Cosmetics. Funktioniert ohne Server: Code oder Datei einfach weitergeben.</p>
+ <label class="f" style="margin-top:0">Profilcode (Mod-Liste und Einstellungen)</label><textarea id="scode" readonly></textarea>
+ <div class="row" style="margin-top:10px"><button class="btn p" id="scopy">Code kopieren</button><button class="btn" id="szip">Als ZIP speichern (mit Mods)</button></div>
+ <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn" data-close>Schließen</button></div></div></div>
+
+<div class="mask" id="mask"><div class="box"><p id="askmsg"></p><div class="row" style="justify-content:flex-end"><button class="btn" id="askno">Abbrechen</button><button class="btn p" id="askyes">OK</button></div></div></div>
+<section class="page" id="mods"><h2>Mods</h2><p class="sub">Gefiltert nach dem Loader des Profils. Benötigte Mods werden automatisch mit installiert.</p>
+ <div class="row" style="margin-bottom:14px"><select id="mprof" style="min-width:240px"></select><input id="mq" class="grow" placeholder="Modrinth durchsuchen…"><button class="btn p" id="msearch">Suchen</button></div>
+ <div class="cols"><div class="card"><h3>Ergebnisse</h3><div id="mres" class="mut">Suche starten.</div></div><div class="card"><h3>Installiert</h3><div id="minst" class="mut">–</div></div></div>
+</section>
+
+<section class="page" id="cos"><h2>Cosmetics</h2><p class="sub">Vorschau zeigt deinen Skin mit dem Cosmetic. Alles wird lokal verschlüsselt gespeichert und gilt auch im Spiel.</p>
+ <div class="row" id="ctypes" style="margin-bottom:14px"></div>
+ <div class="cols" style="grid-template-columns:minmax(380px,1.6fr) minmax(300px,1fr)"><div class="cos" id="cgrid"></div><div class="card prev" id="cprev"><div class="mut">Wähle ein Cosmetic.</div></div></div>
+</section>
+
+<section class="page" id="bundles"><h2>Bundles</h2><p class="sub">Löse die Aufgabe in Minecraft, dann gehört dir das ganze Set. Das gilt für alle, auch mit LAC+. <span id="bcnt" class="mut"></span></p><div class="bgrid" id="bgrid"></div></section>
+
+<section class="page" id="style"><h2>Stil</h2><p class="sub">Badge und Name sind getrennt einstellbar. Ohne LAC+ sind beide weiß und ohne Animation.</p>
+ <div class="cols">
+  <div class="card" id="bcard"><h3>Badge</h3><p class="mut" style="margin-top:0">Das LAC-Logo vor deinem Namen.</p>
+   <div class="row"><input type="color" id="c1" value="#7c5cff"><input type="color" id="c2" value="#00d4ff"><span class="grow"></span><b id="bcount" class="mut">0 / 5</b></div>
+   <div class="tiles" id="bfx"></div>
+   <div style="margin:14px 0;font-size:18px"><span class="badge" id="bprev"></span></div><button class="btn p" id="tsave">Badge speichern</button></div>
+  <div class="card" id="ncard"><h3>Name</h3><p class="mut" style="margin-top:0">Bis zu fünf Effekte laufen gleichzeitig. Gilt im Chat, in der Tab-Liste und über deinem Kopf.</p>
+   <div class="row"><input type="color" id="n1" value="#ffffff"><input type="color" id="n2" value="#7c5cff"><span class="grow"></span><b id="ncount" class="mut">0 / 5</b></div>
+   <div class="tiles" id="nfx"></div>
+   <div style="margin:14px 0;min-height:30px"><span class="badge" id="bprev2" style="width:22px;height:22px"></span> <span class="fx" id="nprev">Dein Name</span></div><button class="btn p" id="nsave">Name speichern</button></div>
+ </div>
+</section>
+
+<section class="page" id="skins"><h2>Skins</h2><p class="sub">Dein Skin und deine Umhänge, wie im Minecraft-Launcher. Änderungen gelten sofort in allen Minecraft-Versionen.</p>
+ <div class="sk"><div class="skp"><canvas id="skv" style="width:260px;height:400px"></canvas><div class="morphcard" id="morph2" style="display:none"></div><div class="eqstrip" id="eqstrip2"></div><canvas id="skprev" width="320" height="560" style="display:none"></canvas><div class="row" style="justify-content:center;margin-top:8px;gap:8px"><button class="btn sm" id="skturn">Drehen</button><span class="mut" id="skwho" style="align-self:center"></span></div></div>
+ <div>
+  <div class="card" style="margin-bottom:14px"><h3>Skin-Bibliothek</h3>
+   <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn sm" id="skfile">Datei hinzufügen</button><button class="btn sm" id="skacc">Aktuellen Skin sichern</button><input id="skname" placeholder="Skin eines Spielers (Name)" style="width:200px"><button class="btn sm" id="skgo">Übernehmen</button></div>
+   <div class="sklib" id="sklib"></div>
+   <div id="skact" style="margin-top:14px;display:none"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><b id="sksel"></b><select id="skvar"><option value="classic">Klassisch (Steve)</option><option value="slim">Schlank (Alex)</option></select><button class="btn p sm" id="skapply">Als Skin setzen</button><button class="btn sm" id="skren">Umbenennen</button><button class="btn d sm" id="skdel">Aus Bibliothek löschen</button></div></div>
+   <div style="margin-top:12px"><button class="btn sm" id="skreset">Standard-Skin wiederherstellen</button></div></div>
+  <div class="card" style="margin-bottom:14px"><h3>Umhänge</h3><div class="capes" id="capes"></div><p class="mut" id="capenone" style="display:none;margin:0">Dieser Account besitzt keine Umhänge.</p></div>
+  <div class="card"><h3>Spielername</h3><p class="mut" style="margin-top:0">Der Name kann nur alle 30 Tage geändert werden. LAC speichert nichts davon bei uns.</p><div class="row" style="gap:8px"><input id="nmnew" placeholder="Neuer Name" style="width:200px"><button class="btn sm" id="nmcheck">Prüfen</button><button class="btn p sm" id="nmgo">Ändern</button><span class="mut" id="nmres"></span></div></div>
+ </div></div></section>
+<section class="page" id="friends"><h2>Freunde</h2><p class="sub">Wer online ist und wo. Chat, Einladungen und Beitreten findest du im Spiel. Die Server-Adresse siehst du nie.</p>
+ <div class="card" style="max-width:520px;margin-bottom:16px"><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><span>Dein Freundescode:</span><b id="fcode" class="gold" style="letter-spacing:2px">…</b><button class="btn sm" id="fcopy">Kopieren</button></div>
+  <div class="row" style="gap:8px;margin-top:12px;align-items:center"><span>Dein Status:</span><select id="fstat"><option value="online">Online</option><option value="afk">AFK</option><option value="offline">Offline</option></select></div>
+  <div class="row" style="gap:8px;margin-top:12px"><input id="fadd" placeholder="Code eines Freundes" style="width:200px;text-transform:uppercase"><button class="btn p sm" id="faddgo">Hinzufügen</button></div></div>
+ <div id="flist"></div></section>
+<section class="page" id="shots"><h2>Fotos</h2><p class="sub">Deine neuesten Screenshots aus allen Profilen. Teilen macht einen Link, den du jedem schicken kannst.</p><div class="shgrid" id="shgrid"></div></section>
+<section class="page" id="dev"><h2>Dev: Spieler und Rollen</h2><p class="sub">Name eintragen, Rang wählen. Gilt sofort für alle LAC-Spieler.</p>
+ <div class="card" style="max-width:560px;margin-bottom:16px"><div class="row" style="gap:8px;flex-wrap:wrap"><input id="rname" placeholder="Minecraft-Name" style="width:200px"><button class="btn sm" data-rk="free">Free</button><button class="btn sm" data-rk="pro">Pro</button><button class="btn sm" data-rk="plus">Plus</button><button class="btn sm" data-rk="dev">Dev</button><button class="btn d sm" data-rk="remove">Entfernen</button></div></div>
+ <div id="rlist"></div></section>
+<section class="page" id="plus"><h2>LAC+</h2><p class="sub">LAC+ schaltet alle Cosmetics außer den Bundles frei, LAC Pro nur Badge und Name. Bundles schaltet jeder nur über seine Aufgabe frei. Alles liegt verschlüsselt lokal in <code>%APPDATA%\.lac\lac.dat</code>, es gibt keinen Server.</p>
+ <div class="card" style="max-width:560px"><h3>Status</h3><div id="status" class="mut">Bitte anmelden.</div>
+  <label class="f">LAC+ Code</label><div class="row"><input id="code" class="grow" placeholder="Code eingeben"><button class="btn p" id="redeem">Einlösen</button></div><div id="rmsg" class="mut" style="margin-top:8px"></div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><div class="row"><button class="btn d" id="tofree" style="display:none">Zu Free wechseln</button></div>
+  <p class="mut" id="tofreeinfo" style="font-size:12px;display:none">Mit „Zu Free wechseln" enden alle Vorteile, bis du den Code wieder eingibst. Coins und gekaufte Cosmetics bleiben.</p></div>
+</section>
+
+<section class="page" id="set"><h2>Einstellungen</h2><p class="sub">Aussehen des Launchers.</p>
+ <div class="card" style="max-width:520px;margin-bottom:18px"><h3>Sichtbarkeit für andere</h3><p class="mut" style="margin-top:0">Damit andere LAC-Spieler deine Cosmetics, dein Badge und deinen Namensstil sehen, braucht der Client die Adresse des LAC-Sync-Dienstes. Sie wird einmal eingetragen, danach gilt sie für alle Profile. Leer lassen = nichts wird gesendet.</p><div class="row"><input id="syncurl" class="grow" placeholder="https://lac-sync.dein-name.workers.dev"><button class="btn p" id="syncsave">Speichern</button></div></div>
+ <div class="card" style="max-width:520px;margin-bottom:18px"><h3>Updates</h3><p class="mut" style="margin-top:0" id="upinfo">Der Launcher und die LAC-Mods werden beim Start automatisch geprüft.</p><button class="btn p" id="upcheck">Nach Updates suchen</button> <button class="btn p" id="upinst" style="display:none">Jetzt installieren</button></div>
+ <div class="card" style="max-width:420px"><h3>Sprache</h3><select id="llang" style="width:100%"><option value="de">Deutsch</option><option value="en">English</option></select></div>
+ <div class="card" style="max-width:420px"><h3>Launcher-Schrift</h3><select id="lfont" style="width:100%"><option value="">Inter (Standard)</option><option value="LacPoppins">Poppins</option><option value="LacRighteous">Righteous</option><option value="LacAudiowide">Audiowide</option><option value="LacPress">Press Start 2P</option></select></div>
+</section>
+
+<section class="page" id="lp"><h2>LAC Modpacks</h2><p class="sub">Modpacks, die LAC-Entwickler für alle bereitstellen. Mit einem Klick installierst du sie als eigenes Profil, inklusive passendem LAC-Mod.</p>
+ <div class="row" style="gap:8px;margin-bottom:14px"><input id="lpq" class="grow" placeholder="Suchen (Name, Ersteller, Code)"><input id="lpcode" placeholder="Modpack-Code" style="width:170px"><button class="btn p" id="lpgo">Mit Code installieren</button></div>
+ <div id="lplist"><div class="mut">Lade…</div></div></section>
+
+<section class="page" id="dl"><h2>Client als Mod</h2><p class="sub">Den LAC Client als einzelne Mod-Datei herunterladen, für eigene Modpacks, Prism, CurseForge und so weiter. Die Datei kommt einfach in den <code>mods</code>-Ordner.</p>
+ <div class="card"><div id="dlist" class="mut">–</div><p class="mut" style="font-size:12px;margin:14px 0 0">Fabric braucht zusätzlich Fabric API. Cosmetics, Coins und LAC+ liegen verschlüsselt in <code>%APPDATA%\.lac\lac.dat</code> und werden vom Spiel automatisch gefunden.</p></div>
+</section>
+</main>
+<div id="dock"><img id="dockav" alt=""><div class="dt"><b id="dockn">Kein Profil</b><small id="docks"></small></div><button class="lbtn sm" id="dockgo"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg><b id="dockgot">Starten</b></button></div></div></div><div class="toast" id="toast"></div><div id="upop" style="display:none;position:fixed;right:18px;bottom:18px;width:300px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;z-index:90;box-shadow:0 10px 30px #0008"><b id="uptitle">Update</b><div class="mut" id="uptext" style="font-size:12px;margin:4px 0 10px"></div><div class="bar"><i id="upbar"></i></div><button class="btn p sm" id="upnow" style="margin-top:10px;display:none">Jetzt installieren</button></div>
+
+<script src="lang.js"></script>
+<script src="skinview.js"></script>
+<script>document.addEventListener("dragstart",(e)=>e.preventDefault());document.addEventListener("selectstart",(e)=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.nodeName||e.target.parentNode?.nodeName||"")&&!e.target.isContentEditable)e.preventDefault()});</script>
+<script>
+const $ = (s) => document.querySelector(s), $$ = (s) => [...document.querySelectorAll(s)];
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const clean = (e) => String(e && e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
+const HUE = [0, 355, 130, 218, 48, 282];
+let me = null, cat = { types: [], items: [] }, profiles = [], cur = null, ctype = "cape", picked = null, variant = {}, builds = [], pLoader = "fabric", stage = null, lines = [];
+function toast(msg, ok) { const t = $("#toast"); t.textContent = msg; t.style.borderColor = ok ? "#244a38" : "#5d2b3a"; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => (t.style.display = "none"), 4500); }
+const guard = (fn) => async (...a) => { try { return await fn(...a); } catch (e) { toast(clean(e)); } };
+
+$$("nav button").forEach((b) => b.onclick = () => { $$("nav button,.page").forEach((x) => x.classList.remove("on")); b.classList.add("on"); $("#" + b.dataset.p).classList.add("on"); if (b.dataset.p === "mods") renderMods(); if (b.dataset.p === "lp") renderLP(); if (b.dataset.p === "cos") renderCos(); if (b.dataset.p === "bundles") renderBundles(); if (b.dataset.p === "skins") renderSkins(); if (b.dataset.p === "friends") renderFriends(); if (b.dataset.p === "dev") renderRoles(); if (b.dataset.p === "shots") renderShots(); });
+
+/* ---------- skins ---------- */
+let skProf = null, skLib = [], skSel = "", skBack = false;
+/** draws the skin (front or back) layer by layer; old 64x32 skins mirror the right limbs for the left ones */
+function drawSkin(cv, img, slim, back, k) {
+  const ctx = cv.getContext("2d"); ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, cv.width, cv.height);
+  const legacy = img.height === 32, aw = slim ? 3 : 4;
+  const part = (sx, sy, w, h, dx, dy, flip) => {
+    ctx.save();
+    if (flip) { ctx.translate((dx + w) * k, dy * k); ctx.scale(-1, 1); ctx.drawImage(img, sx, sy, w, h, 0, 0, w * k, h * k); } else ctx.drawImage(img, sx, sy, w, h, dx * k, dy * k, w * k, h * k);
+    ctx.restore();
+  };
+  const ox = (cv.width / k - 16) / 2, oy = (cv.height / k - 32) / 2;
+  // head and body
+  part(back ? 24 : 8, 8, 8, 8, ox + 4, oy); part(back ? 56 : 40, 8, 8, 8, ox + 4, oy);
+  part(back ? 32 : 20, 20, 8, 12, ox + 4, oy + 8); if (!legacy) part(back ? 32 : 20, 36, 8, 12, ox + 4, oy + 8);
+  // limb: the character's right or left one; in the front view the right one is on the viewer's left, in the back view on the right
+  const limb = (left, w, rightFace, leftFace, rightOver, leftOver, dx, dy) => {
+    const f = left ? leftFace : rightFace;
+    if (left && legacy) part(rightFace[0], rightFace[1], w, 12, dx, dy, true); else part(f[0], f[1], w, 12, dx, dy);
+    if (!legacy) { const o = left ? leftOver : rightOver; part(o[0], o[1], w, 12, dx, dy); }
+  };
+  const armFaces = back ? { r: [52, 20], l: [60, 52], ro: [52, 36], lo: [60, 52 + 0] } : { r: [44, 20], l: [36, 52], ro: [44, 36], lo: [52, 52] };
+  if (back) { armFaces.l = [44, 52]; armFaces.lo = [60, 52]; }
+  // right arm: viewer-left in front, viewer-right in back
+  const rx = back ? ox + 12 : ox + 4 - aw, lx = back ? ox + 4 - aw : ox + 12;
+  limb(false, aw, armFaces.r, armFaces.l, armFaces.ro, armFaces.lo, rx, oy + 8);
+  limb(true, aw, armFaces.r, armFaces.l, armFaces.ro, armFaces.lo, lx, oy + 8);
+  const legFaces = back ? { r: [12, 20], l: [28, 52], ro: [12, 36], lo: [12, 52] } : { r: [4, 20], l: [20, 52], ro: [4, 36], lo: [4, 52] };
+  limb(false, 4, legFaces.r, legFaces.l, legFaces.ro, legFaces.lo, back ? ox + 8 : ox + 4, oy + 20);
+  limb(true, 4, legFaces.r, legFaces.l, legFaces.ro, legFaces.lo, back ? ox + 4 : ox + 8, oy + 20);
+}
+const skImg = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+let skView = null;
+async function skRedraw() {
+  const cv = $("#skprev"); let src = "";
+  const e = skLib.find((x) => x.id === skSel);
+  if (e) { src = e.pic; $("#skwho").textContent = "Vorschau: " + e.name; }
+  if (!src && skProf && skProf.skin) { src = skProf.skin.pic; $("#skwho").textContent = skProf.name + " (aktuell)"; }
+  if (!src) return;
+  if (!skView) skView = new SkinView($("#skv"));
+  if (skView.ok) { $("#skprev").style.display = "none"; $("#skv").style.display = ""; if (await skView.setSkin(src, e ? e.variant === "slim" : !!(skProf && skProf.skin && skProf.skin.variant === "slim"))) return; }
+  $("#skprev").style.display = ""; $("#skv").style.display = "none";
+  drawSkin(cv, await skImg(src), e ? e.variant === "slim" : !!(skProf && skProf.skin && skProf.skin.variant === "slim"), skBack, 18);
+}
+async function renderSkins() {
+  skLib = await lac.skinLib();
+  try { skProf = await lac.skinProfile(); } catch (e) { skProf = null; toast(clean(e)); }
+  $("#sklib").innerHTML = skLib.map((e) => `<div class="skc ${e.id === skSel ? "sel" : ""}" data-sk="${e.id}"><canvas width="64" height="64" data-skc="${e.id}"></canvas><b>${esc(e.name)}</b><span class="mut" style="font-size:11px">${e.variant === "slim" ? "Schlank" : "Klassisch"}</span></div>`).join("") || '<span class="mut">Noch nichts gesammelt: Datei hinzufügen oder den Skin eines Spielers übernehmen.</span>';
+  for (const e of skLib) {
+    const cv = document.querySelector(`[data-skc="${e.id}"]`);
+    if (cv && e.pic) { const i = await skImg(e.pic), c = cv.getContext("2d"); c.imageSmoothingEnabled = false; c.drawImage(i, 8, 8, 8, 8, 16, 0, 32, 32); c.drawImage(i, 40, 8, 8, 8, 16, 0, 32, 32); c.drawImage(i, 20, 20, 8, 12, 16, 32, 32, 32); }
+  }
+  $$("[data-sk]").forEach((x) => x.onclick = () => {
+    skSel = skSel === x.dataset.sk ? "" : x.dataset.sk; const e = skLib.find((y) => y.id === skSel);
+    $("#skact").style.display = e ? "" : "none"; if (e) { $("#sksel").textContent = e.name; $("#skvar").value = e.variant; }
+    $$("[data-sk]").forEach((y) => y.classList.toggle("sel", y.dataset.sk === skSel)); skRedraw();
+  });
+  const capes = (skProf && skProf.capes) || [];
+  $("#capenone").style.display = capes.length ? "none" : "";
+  $("#capes").innerHTML = (capes.length ? `<div class="cp ${capes.some((c) => c.active) ? "" : "on"}" data-cape=""><canvas width="10" height="16"></canvas>Kein Umhang</div>` : "") + capes.map((c) => `<div class="cp ${c.active ? "on" : ""}" data-cape="${esc(c.id)}"><canvas width="10" height="16" data-capec="${esc(c.id)}"></canvas>${esc(c.alias)}</div>`).join("");
+  for (const c of capes) { const cv = document.querySelector(`[data-capec="${c.id}"]`); if (cv && c.pic) { const i = await skImg(c.pic), g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(i, 1, 1, 10, 16, 0, 0, 10, 16); } }
+  $$("[data-cape]").forEach((x) => x.onclick = guard(async () => { await lac.skinCape(x.dataset.cape); toast(x.dataset.cape ? "Umhang gesetzt" : "Umhang abgelegt", true); renderSkins(); }));
+  skRedraw();
+}
+$("#skturn").onclick = () => { if (skView && skView.ok) skView.flip(); else { skBack = !skBack; skRedraw(); } };
+$("#skfile").onclick = guard(async () => { const id = await lac.skinAdd("classic"); if (id) { skSel = id; toast("Skin gespeichert", true); await renderSkins(); } });
+$("#skacc").onclick = guard(async () => { await lac.skinFromAccount(); toast("Aktueller Skin gesichert", true); renderSkins(); });
+$("#skgo").onclick = guard(async () => { const id = await lac.skinFromName($("#skname").value); skSel = id; $("#skname").value = ""; toast("Skin übernommen", true); renderSkins(); });
+$("#skapply").onclick = guard(async () => { await lac.skinApply(skSel, $("#skvar").value); toast("Skin gesetzt: in Minecraft nach dem nächsten Beitritt sichtbar", true); renderSkins(); });
+$("#skren").onclick = guard(async () => { const n = prompt("Neuer Name für den Skin"); if (n) { await lac.skinRename(skSel, n); renderSkins(); } });
+$("#skdel").onclick = guard(async () => { await lac.skinRemove(skSel); skSel = ""; $("#skact").style.display = "none"; renderSkins(); });
+$("#skreset").onclick = guard(async () => { if (confirm("Standard-Skin wiederherstellen?")) { await lac.skinReset(); toast("Skin zurückgesetzt", true); renderSkins(); } });
+$("#nmcheck").onclick = guard(async () => { $("#nmres").textContent = (await lac.nameCheck($("#nmnew").value)) ? "Name ist frei" : "Name ist vergeben"; });
+$("#nmgo").onclick = guard(async () => { if (!confirm("Name wirklich ändern? Das geht nur alle 30 Tage.")) return; const r = await lac.nameChange($("#nmnew").value); $("#nmres").textContent = ""; toast("Neuer Name: " + (r.name || $("#nmnew").value), true); loadUser(); renderSkins(); });
+
+/* ---------- screenshots ---------- */
+async function renderShots() {
+  $("#shgrid").innerHTML = '<span class="mut">Lade…</span>';
+  const l = await lac.shots();
+  $("#shgrid").innerHTML = l.map((s, i) => `<div class="shc"><img src="${s.thumb}" alt=""><div class="row"><span class="n grow" title="${esc(s.name)}">${esc(s.name.replace(/\.png$/, ""))}</span><button class="btn p sm" data-sh="${i}">Teilen</button><button class="btn sm" data-shf="${i}">Ordner</button></div></div>`).join("") || '<span class="mut">Noch keine Screenshots: mit F2 im Spiel machst du eins.</span>';
+  $$("[data-sh]").forEach((b) => b.onclick = guard(async () => { b.disabled = true; try { const u = await lac.shotShare(l[+b.dataset.sh].file); toast("Link kopiert: " + u, true); } finally { b.disabled = false; } }));
+  $$("[data-shf]").forEach((b) => b.onclick = () => lac.shotFolder(l[+b.dataset.shf].file));
+}
+
+/* ---------- friends ---------- */
+let fTimer = null;
+async function renderFriends() {
+  clearTimeout(fTimer); if (!$("#friends").classList.contains("on")) return;
+  try {
+    const r = await lac.friends(); $("#fcode").textContent = r.code || "…"; if (document.activeElement !== $("#fstat")) $("#fstat").value = r.status;
+    const rk = { online: 0, afk: 1, offline: 2 }; r.friends.sort((a, b) => rk[a.status] - rk[b.status] || a.name.localeCompare(b.name));
+    $("#flist").innerHTML = r.friends.map((f) => `<div class="frow"><img src="https://mc-heads.net/avatar/${f.uuid}/68" alt=""><div class="grow"><b>${esc(f.name)}</b><div class="mut" style="font-size:12px">${f.status === "offline" ? "Offline" : esc(f.server || (f.status === "afk" ? "AFK" : "Online"))}</div></div><span class="dot ${f.status}"></span></div>`).join("") || '<span class="mut">Noch keine Freunde: gib einen Freundescode ein.</span>';
+  } catch (e) { $("#flist").innerHTML = `<span class="bad">${esc(clean(e))}</span>`; }
+  fTimer = setTimeout(renderFriends, 8000);
+}
+$("#fstat").onchange = guard(async () => { await lac.friendStatus($("#fstat").value); toast("Status gesetzt", true); });
+$("#fcopy").onclick = () => { navigator.clipboard.writeText($("#fcode").textContent); toast("Code kopiert", true); };
+$("#faddgo").onclick = guard(async () => { const r = await lac.friendAdd($("#fadd").value); $("#fadd").value = ""; toast((r.name || "Freund") + " ist jetzt dein Freund", true); renderFriends(); });
+
+/* ---------- dev: roles of players ---------- */
+async function renderRoles(map) {
+  try { map = map || await lac.roles(); } catch (e) { toast(clean(e)); return; }
+  const l = Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
+  $("#rlist").innerHTML = l.map((r) => `<div class="frow" data-rn="${esc(r.name)}" style="cursor:pointer"><b class="grow">${esc(r.name)}</b><span class="${r.rank === "dev" ? "gold" : "ok"}">${r.rank[0].toUpperCase() + r.rank.slice(1)}</span></div>`).join("") || '<span class="mut">Noch keine Rollen vergeben</span>';
+  $$("[data-rn]").forEach((x) => x.onclick = () => { $("#rname").value = x.dataset.rn; });
+}
+$$("[data-rk]").forEach((b) => b.onclick = guard(async () => { const n = $("#rname").value.trim(); if (!n) return; const m = await lac.roleSet(n, b.dataset.rk); toast(b.dataset.rk === "remove" ? n + ": Rolle entfernt" : n + " ist jetzt " + b.dataset.rk, true); renderRoles(m); }));
+
+/* ---------- account / store ---------- */
+async function loadUser() {
+  const u = await lac.user();
+  if (u.name) { $("#uname").textContent = u.name; window._uuid = (u.uuid || "").replace(/-/g, ""); setAvatar(); $("#login").style.display = u.online ? "none" : ""; $("#login2").style.display = u.online ? "none" : ""; $("#login").textContent = "Anmelden zum Spielen"; $("#logout").style.display = u.online ? "" : "none"; await loadMe(); }
+}
+const rank = (m) => (m.dev ? "Dev" : m.plus ? "Plus" : m.pro ? "Pro" : "Free");
+async function loadMe() { try { me = await lac.me(); } catch { me = null; }
+  if (!me) return; for (const a of [NAME_UI, BADGE_UI]) { const i = a.indexOf("fire"); if (!me.dev && i >= 0) a.splice(i, 1); else if (me.dev && i < 0) a.splice(4, 0, "fire"); }   // Fire is for Devs only
+  $("#devnav").style.display = me.dev ? "" : "none"; $("#ubal").innerHTML = `<span class="gold">${me.coins} Coins</span> · <span class="${me.dev || me.plus || me.pro ? "ok" : ""}">${rank(me)}</span> · Level ${lvl(me.xp || 0)}`;
+  $("#status").innerHTML = `Coins: <b class="gold">${me.coins}</b><br>Rang: <b class="${me.dev || me.plus || me.pro ? "ok" : ""}">${rank(me)}</b><br>Level <b>${lvl(me.xp || 0)}</b> · ${me.xp || 0} XP`; { const paid = !!(me.plus || me.pro || me.dev); $("#tofree").style.display = paid ? "" : "none"; $("#tofreeinfo").style.display = paid ? "" : "none"; }
+  $("#c1").value = me.tag.color; $("#c2").value = me.tag.color2; $("#n1").value = me.name.color; $("#n2").value = me.name.color2; 
+  nsel = [...nameFxOf(me.name)]; bsel = [...nameFxOf(me.tag)]; paintTiles(); lockStyle(); renderCos(); renderHero(); }
+$("#logout").onclick = guard(async () => { await lac.logout(); toast("Abgemeldet. Cosmetics bleiben nutzbar.", true); await loadUser(); $("#login").style.display = ""; $("#logout").style.display = "none"; });
+$("#login").onclick = guard(async () => { const u = await lac.login(); toast("Angemeldet als " + u.name, true); await loadUser(); });
+lac.onLoginCode((c) => { const m = document.createElement("div"); m.className = "modal on"; m.id = "dcode"; m.innerHTML = '<div class="box" style="max-width:420px;text-align:center"><h3>Bei Microsoft anmelden</h3><p>Im Browser ist <b>microsoft.com/link</b> geöffnet. Gib dort diesen Code ein:</p><div style="font:700 34px/1.4 monospace;letter-spacing:6px;margin:10px 0">' + c.code + '</div><p style="color:var(--mut)">Du bleibst im Browser angemeldet, deshalb kommt meist kein extra Code per Mail. Dieses Fenster schließt sich von selbst.</p><button id="dcancel" class="btn">Abbrechen</button> <button id="dcopy" class="btn p">Code kopieren</button></div>'; document.body.appendChild(m); $("#dcancel").onclick = () => lac.loginCancel(); $("#dcopy").onclick = () => { navigator.clipboard.writeText(c.code); toast("Kopiert", true); }; });
+// not signed in: ask once per start, right away, so nobody has to look for the button
+setTimeout(async () => {
+  try { const u = await lac.user(); if (u.online || $("#lgate")) return; } catch { return; }
+  const m = document.createElement("div"); m.className = "modal on"; m.id = "lgate";
+  m.innerHTML = '<div class="box" style="max-width:400px;text-align:center"><h3>Willkommen beim LAC Launcher</h3><p style="color:var(--mut)">Melde dich mit Microsoft an, um Minecraft zu starten und deine Cosmetics zu nutzen.</p><div style="display:grid;gap:8px;margin-top:14px"><button id="gms" class="btn p">Mit Microsoft anmelden</button><button id="gcode" class="btn">Mit Code anmelden</button><button id="glater" style="background:none;border:0;color:var(--mut)">Später</button></div><p style="color:var(--mut);font-size:12px;margin-top:10px">Kommt kein Code per Mail? Nimm „Mit Code anmelden".</p></div>';
+  document.body.appendChild(m);
+  $("#gms").onclick = () => { m.remove(); $("#login").click(); }; $("#gcode").onclick = () => { m.remove(); $("#login2").click(); }; $("#glater").onclick = () => m.remove();
+}, 4500);
+$("#login2").onclick = async () => { try { const u = await lac.loginDevice(); toast("Angemeldet als " + u.name, true); await loadUser(); } catch (e) { toast(clean(e)); } finally { const m = $("#dcode"); if (m) m.remove(); } };
+
+/* ---------- profiles ---------- */
+const LNAME = { fabric: "Fabric", neoforge: "NeoForge", forge: "Forge" };
+const st = {}, runStart = {};   // per profile: last launch event; start time of the running game
+let sysMb = 16384;
+const fmtTime = (sec) => { sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return h ? `${h} h ${m} min` : m ? `${m} min ${s} s` : `${s} s`; };
+const ramMb = (r) => { r = String(r || "4096M").toLowerCase(); return /g$/.test(r) ? parseFloat(r) * 1024 : parseFloat(r) || 4096; };
+const ramLabel = (r) => r === "unlimited" ? "unbegrenzt" : (ramMb(r) / 1024).toFixed(ramMb(r) % 1024 ? 1 : 0) + " GB";
+const modal = (id, on = true) => $("#" + id).classList.toggle("on", on);
+$$("[data-close]").forEach((b) => b.onclick = () => b.closest(".modal").classList.remove("on"));
+$$(".modal").forEach((m) => m.onmousedown = (e) => { if (e.target === m) m.classList.remove("on"); });
+$("#padd").onclick = (e) => { e.stopPropagation(); $("#pmenu").classList.toggle("on"); };
+document.addEventListener("click", () => $("#pmenu").classList.remove("on"));
+$("#m-new").onclick = () => { modal("mnew"); loadVersions(); };
+$("#m-pack").onclick = () => { $("#pmsg").textContent = ""; modal("mpack"); if (!$("#pres").children.length) searchPacks(); };
+let packBusy = false;
+let packLoader = "", packOff = 0;
+const searchPacks = guard(async (more) => {
+  if (more !== true) { packOff = 0; window._packs = []; $("#pres").textContent = "Suche…"; }
+  const hits = await lac.searchPacks($("#pq").value, $("#ponly").checked, packLoader, packOff); window._packs = (window._packs || []).concat(hits); packOff += hits.length; const _ks = scrollState();
+  $("#pres").innerHTML = window._packs.map((h, i) => `<div class="item"><img src="${esc(h.icon || "")}" alt=""><div class="grow"><b>${esc(h.title)}</b> ${h.loaders.map((l) => `<span class="chip ${l}">${LNAME[l]}</span>`).join(" ")} <span class="chip" style="${h.lac ? "color:#6cf5a4" : ""}">${h.lac ? "LAC-Mod passend" : "ohne LAC-Mod"}</span><div class="mut" style="font-size:12px">${esc(h.description)}</div></div><button class="btn sm" data-pack="${i}">Installieren</button></div>`).join("") + (hits.length >= 20 ? '<div style="text-align:center;margin-top:10px"><button class="btn" id="pmore">Weitere</button></div>' : "") || '<div class="mut">Nichts gefunden.</div>';
+  if ($("#pmore")) $("#pmore").onclick = () => searchPacks(true);
+  _ks();
+  $$("[data-pack]").forEach((b) => b.onclick = guard(async () => {
+    if (packBusy) return toast("Es wird schon ein Modpack installiert");
+    packBusy = true; b.disabled = true; b.textContent = "…";
+    try { const r = await lac.installPack(window._packs[b.dataset.pack].id); profiles = r.profiles; cur = profiles.at(-1); renderProfiles(); modal("mpack", false); toast(`${cur.name} installiert` + (r.lac ? ", LAC-Mod wird beim Start eingesetzt" : `, aber für ${LNAME[r.loader]} ${r.mc} gibt es den LAC-Mod noch nicht`), true); }
+    finally { packBusy = false; b.disabled = false; b.textContent = "Installieren"; $("#pmsg").textContent = ""; }
+  }));
+});
+$$("[data-pl]").forEach((b) => b.onclick = () => { packLoader = b.dataset.pl; $$("[data-pl]").forEach((x) => x.classList.toggle("p", x === b)); searchPacks(); });
+$("#pgo").onclick = () => searchPacks(); $("#pq").onkeydown = (e) => { if (e.key === "Enter") searchPacks(); }; $("#ponly").onchange = () => searchPacks();
+$("#m-imp").onclick = () => { $("#imsg").textContent = ""; modal("mimp"); };
+async function loadVersions() {
+  $("#pver").innerHTML = "<option>lädt…</option>";
+  try { const v = await lac.versions(pLoader); $("#pver").innerHTML = v.slice(0, 80).map((x) => `<option>${esc(x)}</option>`).join(""); } catch (e) { $("#pver").innerHTML = ""; toast("Versionen nicht ladbar: " + clean(e)); }
+  $("#phint").textContent = pLoader === "fabric" ? "Fabric API wird automatisch installiert." : "Der Loader wird beim ersten Start einmalig installiert.";
+  $("#prow").style.display = pLoader === "fabric" ? "" : "none";
+}
+$$("#ploader button").forEach((b) => b.onclick = () => { $$("#ploader button").forEach((x) => x.classList.remove("on")); b.classList.add("on"); pLoader = b.dataset.l; loadVersions(); });
+$("#pcreate").onclick = guard(async () => {
+  const name = $("#pname").value.trim(); if (!name) return toast("Bitte einen Namen eingeben");
+  profiles = await lac.saveProfile({ id: "", name, loader: pLoader, mc: $("#pver").value, mods: [], ram: "4096M", playtime: 0 }); $("#pname").value = ""; cur = profiles.at(-1);
+  if (pLoader === "fabric" && $("#ppreset").checked) {
+    $("#pcreate").disabled = true; $("#pcreate").textContent = "Installiere Mods…";
+    try { const r = await lac.installPreset(cur.id); profiles = await lac.profiles(); cur = profiles.find((p) => p.id === cur.id) || cur; if (r.skipped.length) toast("Nicht verfügbar: " + r.skipped.join(", ")); }
+    finally { $("#pcreate").disabled = false; $("#pcreate").textContent = "Erstellen"; $("#pstat").textContent = ""; }
+  }
+  modal("mnew", false); renderProfiles(); toast("Profil erstellt", true); });
+const importDone = (p) => { profiles = p; cur = profiles.at(-1); renderProfiles(); modal("mimp", false); toast("Profil importiert: " + cur.name, true); };
+$("#icodego").onclick = guard(async () => { $("#imsg").textContent = "Importiere… (Mods werden geladen)"; try { importDone(await lac.importCode($("#icode").value)); $("#icode").value = ""; } catch (e) { $("#imsg").textContent = clean(e); throw e; } });
+$("#izip").onclick = guard(async () => { const r = await lac.importZip(); if (r) importDone(r); });
+
+const GEAR = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>';
+const SHARE = '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>';
+const isActive = (e) => e && !["closed", "error"].includes(e.stage);
+const anyBusy = () => Object.values(st).some(isActive);
+function btnState(p) {
+  const e = st[p.id], busy = e && ["prepare", "loader", "mods", "files", "starting"].includes(e.stage), run = e && e.stage === "running";
+  if (run) return { cls: "stop", text: "Stoppen", act: "stop" };
+  if (busy) return { cls: "busy", text: `${e.label} · ${Math.round(e.pct)}%`, act: "" };
+  return { cls: "", text: "Starten", act: "start", off: anyBusy() };
+}
+function renderProfiles() {
+  $("#plist").innerHTML = profiles.map((p) => { const b = btnState(p), e = st[p.id], act = isActive(e), failed = e && (e.stage === "error" || (e.stage === "closed" && e.label !== "Beendet" && !/null/.test(e.label)));
+    return `<div class="pr ${act ? "act" : ""}" data-id="${p.id}"><div class="top">${picIc(p)}
+     <div class="grow"><div class="nm">${esc(p.name)}</div><div class="meta"><span class="chip ${p.loader}">${LNAME[p.loader]}</span><span>Minecraft ${esc(p.mc)}</span>${p.creator ? `<span>von ${esc(p.creator)}</span>` : ""}<span>${(p.mods || []).length} Mods</span>${(window._lpU || []).some((u) => u.profile === p.id) ? '<span class="chip" style="color:#ffd24a;border-color:#6b5a1f">Update verfügbar</span>' : ""}<span>${ramLabel(p.ram)}</span><span class="ok" data-time="${p.id}">⏱ ${fmtTime(p.playtime || 0)}</span></div>
+     ${failed ? `<div class="bad" style="font-size:12px;margin-top:4px">${esc(e.label)}</div>` : ""}</div>
+     <button class="stbtn ${b.cls}" data-act="${b.act}" ${b.off || !b.act ? "disabled" : ""}>${esc(b.text)}</button>
+     <button class="icb" data-share title="Teilen">${SHARE}</button><button class="icb" data-set title="Einstellungen">${GEAR}</button></div>
+     <div class="bar"><i style="width:${e ? e.pct : 0}%"></i></div></div>`; }).join("") || '<div class="card mut">Noch keine Profile. Mit dem + oben rechts legst du eins an.</div>';
+  $$(".pr").forEach((c) => { const id = c.dataset.id, p = profiles.find((x) => x.id === id);
+    c.querySelector(".nm").style.cursor = "pointer"; c.querySelector(".top").onclick = (ev) => { if (!ev.target.closest("button")) openDetail(p); };
+    c.querySelector("[data-act]").onclick = guard(async () => { const a = c.querySelector("[data-act]").dataset.act; if (a === "start") { lines = []; await lac.launch(id); } else if (a === "stop") lac.kill(); });
+    c.querySelector("[data-set]").onclick = () => openSettings(p); c.querySelector("[data-share]").onclick = guard(() => openShare(p)); });
+}
+/* ---------- profile overview ---------- */
+let detTab = 0, detQ = "", detF = 0, detS = 0, detData = null, detProf = null, detAdd = false, detAq = "", detHits = [], detAoff = 0, detAmore = false, detAbusy = false;
+async function openDetail(p) {
+  detProf = p; detTab = 0; detQ = ""; detF = 0; detS = 0; detAdd = false; detAq = ""; detHits = []; detData = null; $("#mdet").classList.add("on"); $("#mdetbox").innerHTML = '<div class="mut">Lade…</div>';
+  try { detData = await lac.profileContents(p.id); } catch (e) { toast(clean(e)); $("#mdet").classList.remove("on"); return; }
+  paintDetail();
+}
+function paintDetail() {
+  const d = detData, p = detProf, lists = [d.mods, d.packs, d.shaders], names = ["Mods", "Ressourcenpakete", "Shader"], list = lists[detTab] || [];
+  const q = detQ.trim().toLowerCase(), shown = list.filter((x) => (detF === 0 || (detF === 1) === x.enabled) && (detS === 0 || (detS === 1 ? x.src === "pack" : x.src === "own")) && (!q || (x.title + " " + x.file).toLowerCase().includes(q)));
+  const hours = Math.floor((d.playtime || 0) / 3600), mins = Math.floor(((d.playtime || 0) % 3600) / 60);
+  $("#mdetbox").innerHTML = `<div class="row" style="gap:12px;align-items:center">${picIc(p)}<div class="grow"><h3 style="margin:0">${esc(d.name)}</h3><div class="mut" style="font-size:12px">${esc(LNAME[d.loader] || d.loader)} · Minecraft ${esc(d.mc)}${d.creator ? " · von " + esc(d.creator) : ""} · ${ramLabel(d.ram)} · ${hours} h ${mins} min gespielt${d.lac ? " · LAC Client" : ""}</div></div><button class="btn sm" id="dclose">Schließen</button></div>
+   <div class="dtabs">${names.map((n, i) => `<button data-dt="${i}" class="${i === detTab ? "on" : ""}">${n} (${lists[i].filter((x) => x.enabled).length}/${lists[i].length})</button>`).join("")}<button id="dplus" class="dplus ${detAdd ? "on" : ""}" title="Hinzufügen">+</button></div>
+   ${detAdd ? `<div class="dadd"><div class="row" style="gap:8px"><input id="daq" class="grow" placeholder="${detTab === 0 ? "Mod" : detTab === 1 ? "Ressourcenpaket" : "Shader"} auf Modrinth suchen…" value="${esc(detAq)}"><button class="btn p sm" id="dago">Suchen</button></div><div id="dares">${detHits.map((h, i) => `<div class="item"><img src="${esc(h.icon || "")}" alt=""><div class="grow"><b>${esc(h.title)}</b><div class="mut" style="font-size:12px">${esc((h.description || "").slice(0, 110))}</div></div><button class="btn sm" data-dadd="${i}">Hinzufügen</button></div>`).join("") || (detAbusy ? '<div class="mut">Suche…</div>' : '<div class="mut" style="padding:8px 0">Suche starten.</div>')}${detAmore ? '<div style="text-align:center;margin-top:8px"><button class="btn sm" id="damore">Weitere</button></div>' : ""}</div></div>` : ""}
+   <div class="row" style="gap:8px;margin-bottom:10px"><input id="dq" placeholder="Suchen…" value="${esc(detQ)}" style="flex:1">${d.isPack ? `<select id="ds"><option value="0" ${detS === 0 ? "selected" : ""}>Alles</option><option value="1" ${detS === 1 ? "selected" : ""}>Aus dem Modpack</option><option value="2" ${detS === 2 ? "selected" : ""}>Eigene (selbst hinzugefügt)</option></select>` : ""}<select id="df"><option value="0" ${detF === 0 ? "selected" : ""}>Alle</option><option value="1" ${detF === 1 ? "selected" : ""}>Aktiv</option><option value="2" ${detF === 2 ? "selected" : ""}>Aus</option></select></div>
+   <div class="dgrid">${shown.map((x, i) => `<div class="dt ${x.enabled ? "" : "off"} ${x.locked ? "lock" : ""}" data-di="${list.indexOf(x)}">${x.icon ? `<img src="${x.icon}" alt="">` : `<div class="l">${esc((x.title[0] || "?").toUpperCase())}</div>`}<b title="${esc(x.file)}">${esc(x.title)}</b><small>${x.locked ? "Pflicht" : x.enabled ? "Aktiv" : "Aus"}${x.dep ? " · Abhängigkeit" : ""}</small></div>`).join("") || '<span class="mut">Nichts gefunden</span>'}</div>
+   <div class="mut" style="font-size:12px;margin-top:12px">${detTab === 0 ? "Klick auf eine Mod schaltet sie für den nächsten Start an oder aus." : "Ressourcenpakete und Shader schaltest du im Spiel unter Inhalte um."}</div>
+   <div class="row" style="gap:8px;margin-top:10px"><button class="btn sm" id="dfold">${detTab === 0 ? "Mods-Ordner" : detTab === 1 ? "Ressourcenpakete-Ordner" : "Shader-Ordner"} öffnen</button></div>`;
+  $("#dclose").onclick = () => $("#mdet").classList.remove("on");
+  $$("[data-dt]").forEach((b) => b.onclick = () => { detTab = +b.dataset.dt; detF = 0; paintDetail(); });
+  $("#dq").oninput = (ev) => { detQ = ev.target.value; const pos = ev.target.selectionStart; paintDetail(); const i = $("#dq"); i.focus(); i.setSelectionRange(pos, pos); };
+  $("#df").onchange = (ev) => { detF = +ev.target.value; paintDetail(); };
+  if ($("#ds")) $("#ds").onchange = (ev) => { detS = +ev.target.value; paintDetail(); };
+  $("#dplus").onclick = () => { detAdd = !detAdd; detHits = []; detAq = ""; detAoff = 0; detAmore = false; paintDetail(); if (detAdd) { const i = $("#daq"); if (i) i.focus(); detSearch(false); } };
+  if (detAdd) {
+    const go = () => { detAq = $("#daq").value; detSearch(false); };
+    $("#dago").onclick = go; $("#daq").onkeydown = (ev) => { if (ev.key === "Enter") go(); }; if ($("#damore")) $("#damore").onclick = () => { detAq = $("#daq").value; detSearch(true); };
+    $$("[data-dadd]").forEach((b) => b.onclick = guard(async () => {
+      const hit = detHits[+b.dataset.dadd], kind = ["mods", "resourcepacks", "shaderpacks"][detTab]; b.disabled = true; b.textContent = "…";
+      try { await lac.contentAdd(p.id, hit, kind); detData = await lac.profileContents(p.id); profiles = await lac.profiles(); cur = profiles.find((x) => x.id === cur?.id) || cur; renderProfiles(); toast("Hinzugefügt: " + hit.title, true); detHits = detHits.filter((x) => x !== hit); paintDetail(); }
+      catch (e) { b.disabled = false; b.textContent = "Hinzufügen"; throw e; }
+    }));
+  }
+  $("#dfold").onclick = () => lac.openFolder(p.id, detTab === 0 ? "mods" : detTab === 1 ? "resourcepacks" : "shaderpacks");
+  if (detTab === 0) $$("[data-di]").forEach((t) => t.onclick = guard(async () => { const m = d.mods[+t.dataset.di]; if (m.locked) return; await lac.profileToggleMod(p.id, m.file, !m.enabled); m.enabled = !m.enabled; paintDetail(); }));
+}
+async function detSearch(more) {
+  if (detAbusy) return; detAbusy = true; if (!more) { detAoff = 0; detHits = []; paintDetail(); }
+  try { const got = await lac.contentSearch(detAq, detProf.id, ["mods", "resourcepacks", "shaderpacks"][detTab], detAoff); detHits = detHits.concat(got); detAoff += got.length; detAmore = got.length >= 20; }
+  catch (e) { toast(clean(e)); } finally { detAbusy = false; const keep = $("#daq") && $("#daq").value; const _ks = scrollState(); paintDetail(); _ks(); if ($("#daq") && keep != null) $("#daq").value = keep; }
+}
+function ramControls(p) {
+  const maxGb = Math.max(2, Math.floor(sysMb / 512) / 2), unl = p.ram === "unlimited", gb = Math.min(maxGb, Math.max(1, ramMb(unl ? sysMb - 2048 : p.ram) / 1024));
+  return `<label class="f">Maximaler Arbeitsspeicher</label><div class="ramrow"><input type="range" id="rr" min="1" max="${maxGb}" step="0.5" value="${gb}" ${unl ? "disabled" : ""}><input type="number" id="rn" min="1" max="${maxGb}" step="0.5" value="${gb}" ${unl ? "disabled" : ""}><span class="mut">GB</span></div>
+   <label class="row" style="margin-top:8px;gap:8px"><input type="checkbox" id="runl" ${unl ? "checked" : ""}> Unbegrenzt (gesamter Arbeitsspeicher außer 2 GB für Windows)</label><div class="mut" style="font-size:12px">Dein PC hat ${(sysMb / 1024).toFixed(0)} GB. Eine Untergrenze braucht es nicht.</div>`;
+}
+function openSettings(p) {
+  $("#msetbox").innerHTML = `<h3>${esc(p.name)}</h3><div class="mut">${LNAME[p.loader]} · Minecraft ${esc(p.mc)}</div>
+   <div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" id="smods">Mods-Ordner öffnen</button><button class="btn sm" id="sinst">Profil-Ordner öffnen</button></div>
+   <div class="row" style="gap:10px;margin-top:10px">${picIc(p).replace('class="ic"', 'class="ic" id="sicpic"')}<button class="btn sm" id="sicon">Profilbild ändern</button><span class="grow"></span></div>
+   <label class="f">Name</label><input id="sname" style="width:100%" value="${esc(p.name)}">
+   <label class="f">Ersteller</label><input id="screator" style="width:100%" value="${esc(p.creator || "")}" placeholder="Dein Name">
+   ${me && me.dev ? `<div class="card" style="margin-top:12px;padding:12px"><b>Als LAC Modpack veröffentlichen</b> <span class="mut" style="font-size:12px">(Dev)</span><input id="pdesc" style="width:100%;margin-top:8px" placeholder="Kurze Beschreibung" value="${esc(p.desc || "")}"><div class="row" style="margin-top:8px"><button class="btn p sm" id="spub">${p.packId ? "Update veröffentlichen" : "Veröffentlichen"}</button><span class="mut" id="spubinfo" style="font-size:12px">${p.packCode ? "Code: <b>" + esc(p.packCode) + "</b>" : ""}</span></div></div>` : ""}${ramControls(p)}
+   <label class="f">Java-Pfad (leer = automatisch: Java 25 für MC 26.x, sonst Java 21)</label><input id="pjava" style="width:100%" value="${esc(p.java || "")}" placeholder="C:\\...\\bin\\javaw.exe">
+   <label class="f">JVM-Argumente (zusätzlich zu den Start-Optimierungen)</label><input id="pargs" style="width:100%" value="${esc(p.jvmArgs || "")}" placeholder="-XX:+UseZGC">
+   <div class="row"><div class="grow"><label class="f">Fensterbreite</label><input id="pw" type="number" style="width:100%" value="${esc(p.width || "")}" placeholder="auto"></div><div class="grow"><label class="f">Höhe</label><input id="ph" type="number" style="width:100%" value="${esc(p.height || "")}" placeholder="auto"></div></div>
+   ${p.pack ? `<div class="row" style="margin-top:14px;gap:8px"><span class="mut grow" id="packinfo">Modpack-Version ${esc(p.pack.version)}</span><button class="btn sm" id="packup">Auf Update prüfen</button></div>` : ""}
+   ${p.fromPack ? `<div class="row" style="margin-top:14px;gap:8px"><span class="mut grow" id="lpinfo">LAC Modpack, Version ${esc(p.packVer || 1)}</span><button class="btn sm" id="lpup">Auf Update prüfen</button></div>` : ""}
+   <label class="row" style="margin-top:14px;gap:8px"><input type="checkbox" id="plac" ${p.lac !== false ? "checked" : ""}> LAC Client Mod in dieses Profil laden</label>
+   <div class="row" style="margin-top:20px"><button class="btn d sm" id="sdel">Profil löschen</button><span class="grow"></span><button class="btn" id="scancel">Abbrechen</button><button class="btn p" id="ssave">Speichern</button></div>`;
+  const rr = $("#rr"), rn = $("#rn"); rr.oninput = () => (rn.value = rr.value); rn.oninput = () => (rr.value = rn.value);
+  $("#runl").onchange = () => { rr.disabled = rn.disabled = $("#runl").checked; };
+  if (p.fromPack) $("#lpup").onclick = guard(async () => {
+    const b = $("#lpup"), info = $("#lpinfo"); b.disabled = true;
+    try {
+      if (b.dataset.go) { info.textContent = "Wird aktualisiert…"; const r = await lac.packsUpdate(p.id); profiles = r.profiles; Object.assign(p, profiles.find((x) => x.id === p.id) || {}); info.textContent = `Version ${p.packVer}: aktualisiert. Einstellungen, Pakete und Shader sind geblieben.`; b.textContent = "Auf Update prüfen"; delete b.dataset.go; await checkLpUpd(false); toast("Modpack aktualisiert", true); return; }
+      info.textContent = "Suche…"; await checkLpUpd(false); const u = window._lpU.find((x) => x.profile === p.id);
+      if (u) { info.textContent = `Neue Version ${u.latest} (jetzt ${u.ver}). Einstellungen, Pakete und Shader bleiben.`; b.textContent = "Update laden"; b.dataset.go = "1"; } else info.textContent = `Version ${p.packVer || 1}: aktuell`;
+    } finally { b.disabled = false; }
+  });
+  if (p.pack) $("#packup").onclick = guard(async () => {
+    const b = $("#packup"), info = $("#packinfo"); b.disabled = true;
+    try {
+      if (b.dataset.go) { info.textContent = "Wird aktualisiert…"; const r = await lac.updatePack(p.id); profiles = r.profiles; Object.assign(p, profiles.find((x) => x.id === p.id) || {}); info.textContent = `Modpack-Version ${p.pack.version}: aktualisiert`; b.textContent = "Auf Update prüfen"; delete b.dataset.go; renderProfiles(); toast("Modpack aktualisiert", true); return; }
+      info.textContent = "Suche…"; const c = await lac.checkPack(p.id);
+      if (c.newer) { info.textContent = `Neue Version ${c.latest} (jetzt ${c.current})`; b.textContent = "Jetzt aktualisieren"; b.dataset.go = "1"; } else info.textContent = `Modpack-Version ${c.current}: aktuell`;
+    } finally { b.disabled = false; }
+  });
+  $("#smods").onclick = guard(() => lac.openFolder(p.id, "mods")); $("#sinst").onclick = guard(() => lac.openFolder(p.id, "instance"));
+  $("#sicon").onclick = guard(async () => { const r = await lac.profileIcon(p.id); if (r) { profiles = r; Object.assign(p, profiles.find((x) => x.id === p.id) || {}); renderProfiles(); const el = $("#sicpic"); if (el) el.outerHTML = picIc(p).replace('class="ic"', 'class="ic" id="sicpic"'); toast("Profilbild gesetzt", true); } });
+  if ($("#spub")) $("#spub").onclick = guard(async () => { const b = $("#spub"); b.disabled = true; try { const r = await lac.packsPublish(p.id, $("#pdesc").value); profiles = r.profiles; Object.assign(p, profiles.find((x) => x.id === p.id) || {}); $("#spubinfo").innerHTML = "Code: <b>" + esc(r.code) + "</b>"; b.textContent = "Update veröffentlichen"; toast("Modpack veröffentlicht, Code " + r.code + " (wer es hat, sieht jetzt das Update)", true); } finally { b.disabled = false; } });
+  $("#scancel").onclick = () => modal("mset", false);
+  $("#ssave").onclick = guard(async () => { const gb = Math.min(sysMb / 1024, Math.max(1, parseFloat(rn.value) || 4));
+    Object.assign(p, { name: $("#sname").value.trim() || p.name, creator: $("#screator").value.trim(), ram: $("#runl").checked ? "unlimited" : Math.round(gb * 1024) + "M", minRam: "", java: $("#pjava").value.trim(), jvmArgs: $("#pargs").value.trim(), width: $("#pw").value, height: $("#ph").value, lac: $("#plac").checked });
+    profiles = await lac.saveProfile(p); modal("mset", false); renderProfiles(); });
+  $("#sdel").onclick = guard(async () => { if (!(await ask(`Profil „${p.name}“ löschen? Die Mods des Profils bleiben auf der Festplatte.`))) return; profiles = await lac.deleteProfile(p.id); cur = profiles[0] || null; modal("mset", false); renderProfiles(); });
+  modal("mset");
+}
+async function openShare(p) {
+  $("#scode").value = "Erzeuge Code…"; modal("mshare");
+  $("#scopy").onclick = () => { navigator.clipboard.writeText($("#scode").value); toast("Code kopiert", true); };
+  $("#szip").onclick = guard(async () => { const f = await lac.shareZip(p.id); if (f) toast("Gespeichert: " + f, true); });
+  $("#scode").value = await lac.shareCode(p.id);
+}
+lac.onLaunch((e) => {
+  if (e.type === "update") { toast(e.line, true); return; }
+  if (e.type === "pack") { $("#pmsg").textContent = `${e.title} (${e.done}/${e.total})`; return; }
+  if (e.type === "preset") { $("#pstat").textContent = e.title ? `Installiere ${e.title} (${e.done + 1}/${e.total})…` : "Fertig"; return; }
+  if (e.type === "playtime") { lac.profiles().then((p) => { profiles = p; renderProfiles(); }); return; }
+  if (e.type === "stage" && e.pid) {
+    if (e.stage === "running" && !runStart[e.pid]) runStart[e.pid] = Date.now();
+    if (e.stage === "closed" || e.stage === "error") delete runStart[e.pid];
+    st[e.pid] = e; renderProfiles();
+  } else if (e.type === "log") { lines.push(e.line); if (lines.length > 600) lines.shift(); }
+});
+setInterval(() => { for (const [id, t0] of Object.entries(runStart)) { const el = document.querySelector(`[data-time="${id}"]`), p = profiles.find((x) => x.id === id); if (el && p) el.textContent = "⏱ " + fmtTime((p.playtime || 0) + (Date.now() - t0) / 1000) + " (läuft)"; } }, 1000);
+
+/* ---------- confirm dialog (window.confirm steals the keyboard focus in Electron, so inputs stop working) ---------- */
+function ask(msg) { return new Promise((res) => { $("#askmsg").textContent = msg; modal("mask", true); const done = (v) => { modal("mask", false); res(v); }; $("#askyes").onclick = () => done(true); $("#askno").onclick = () => done(false); }); }
+
+/* ---------- name effects (same maths as the game's LacText) ---------- */
+const NAME_FX = ["shaking", "waving", "iterating", "flipping", "skewing", "growing", "gradient", "rainbow", "metallic", "fade", "shimmer", "blinking", "chromatic", "fire", "outline", "glowing", "aurora", "sweep", "breathe", "neon"];
+const NAME_UI = ["gradient", "aurora", "rainbow", "metallic", "fire", "waving", "sweep", "shimmer", "breathe", "glowing", "neon", "fade"], BADGE_UI = ["gradient", "aurora", "rainbow", "metallic", "fire", "sweep", "shimmer", "breathe", "glowing", "neon", "fade", "waving"];
+const FX_LABEL = { gradient: "Verlauf", aurora: "Aurora", rainbow: "Regenbogen", metallic: "Metall", fire: "Feuer", waving: "Welle", sweep: "Glanz", shimmer: "Funkeln", breathe: "Atmen", glowing: "Leuchten", neon: "Neon", fade: "Fade" };
+const hx = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+const mixc = (a, b, t) => { t = Math.max(0, Math.min(1, t)); const x = hx(a), y = hx(b); return "#" + x.map((v, i) => Math.round(v * (1 - t) + y[i] * t).toString(16).padStart(2, "0")).join(""); };
+const hsbc = (h, s, v) => { // hue 0..1, saturation, value -> "#rrggbb"
+  const i = Math.floor(h * 6) % 6, f = h * 6 - Math.floor(h * 6), p = v * (1 - s), q = v * (1 - s * f), u = v * (1 - s * (1 - f));
+  const [r, g, b] = [[v, u, p], [q, v, p], [p, v, u], [p, q, v], [u, p, v], [v, p, q]][i];
+  return "#" + [r, g, b].map((x) => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+};
+// the same maths as the game's LacText.charStyle: slow, eased motion (sums of sines), no random jumps
+function fxChar(fx, a, b, i, n, t) {
+  let c = a, shift = 2, sh = "", it = false, bold = false;
+  for (const e of fx) {
+    if (e === "gradient") c = mixc(a, b, 0.5 + 0.5 * Math.sin(t * 0.8 - i * 0.45));
+    else if (e === "rainbow") c = hsbc((((t * 0.12 + i * 0.05) % 1) + 1) % 1, 0.62, 1);
+    else if (e === "metallic") c = mixc("#7c86a0", "#f2f5ff", 0.5 + 0.5 * Math.sin(t * 1.4 - i * 0.4));
+    else if (e === "chromatic") { const s = 0.5 + 0.5 * Math.sin(t * 1.2); c = mixc("#ff5a5a", "#5ae0ff", (i & 1) === 0 ? s : 1 - s); }
+    else if (e === "aurora") { let k = 0.5 + 0.5 * Math.sin(t * 0.55 - i * 0.3) * (0.7 + 0.3 * Math.sin(t * 0.31 + i * 0.2)); k = k * k * (3 - 2 * k); c = mixc(mixc(a, b, k), "#ffffff", 0.14 * Math.sin(Math.PI * k)); }
+    else if (e === "fire") c = hsbc(0.015 + 0.075 * (0.5 + 0.5 * Math.sin(t * 2.6 + i * 1.9)), 0.9, 0.85 + 0.15 * Math.sin(t * 3.7 + i * 1.3));
+  }
+  for (const e of fx) {
+    if (e === "shimmer") { const d = i - ((t * 4) % (n + 10) - 5); c = mixc(c, "#ffffff", 0.9 * Math.exp(-d * d / 3)); }
+    else if (e === "fade") c = mixc(c, "#2a2a3a", 0.55 * (0.5 + 0.5 * Math.sin(t * 0.9 + i * 0.25)));
+    else if (e === "blinking") { let k = 0.5 + 0.5 * Math.sin(t * 2.4); k = k * k * (3 - 2 * k); c = mixc(c, "#1e1e28", 0.75 * k); }
+    else if (e === "glowing") { const k = 0.5 + 0.5 * Math.sin(t * 1.6 + i * 0.25); c = mixc(c, "#ffffff", 0.1 + 0.3 * k); sh = `0 0 ${3 + 6 * k}px ${c}`; }
+    else if (e === "sweep") { const d = (i - ((t * 0.45) % 1.7 / 1.7 * (n + 10) - 5)) / 2.4; c = mixc(c, "#ffffff", 0.7 * Math.exp(-d * d)); }
+    else if (e === "breathe") { const k = 0.5 - 0.5 * Math.cos(t * 1.9); c = mixc(c, "#ffffff", 0.32 * k * k); }
+    else if (e === "neon") { c = mixc(c, "#ffffff", 0.28); sh = `0 0 6px ${c}`; }
+    else if (e === "outline") sh = "1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000";
+    else if (e === "skewing") it = Math.sin(t * 1.6 - i * 0.8) > 0.25;
+    else if (e === "growing") bold = Math.sin(t * 1.5 - i * 0.6) > 0.3;
+  }
+  for (const e of fx) {
+    if (e === "shaking") shift += 0.9 * Math.sin(t * 5.1 + i * 2.1) + 0.6 * Math.sin(t * 7.3 + i * 3.7);
+    else if (e === "waving") shift += 1.5 * Math.sin(t * 2.6 - i * 0.6);
+    else if (e === "flipping") shift += 1.5 * Math.sin(t * 2.0 + (i & 1) * Math.PI);
+    else if (e === "iterating") { const d = i - ((t * 3.2) % (n + 3)), w = Math.exp(-d * d / 1.2); shift += 1.6 * w; c = mixc(c, "#ffffff", 0.7 * w); if (Math.abs(d) < 0.5) bold = true; }
+  }
+  const s = Math.max(0, Math.min(4, Math.round(shift)));
+  return { c, dy: -(s - 2) * 2, it, bold, sh };
+}
+function fxHtml(text, fx, a, b, t) {
+  const cps = [...text];
+  return cps.map((ch, i) => { const o = fxChar(fx, a, b, i, cps.length, t); return `<span style="display:inline-block;white-space:pre;color:${o.c};transform:translateY(${o.dy}px)${o.it ? " skewX(-12deg)" : ""};${o.bold ? "font-weight:900;" : ""}${o.sh ? "text-shadow:" + o.sh + ";" : ""}">${esc(ch)}</span>`; }).join("");
+}
+const fxTargets = [];   // {el, text(), fx(), a(), b(), badge?}: every animated name and badge in the launcher
+function fxLoop() {
+  const t = performance.now() / 1000;
+  for (const f of fxTargets) {
+    if (!f.el.isConnected || f.el.offsetParent === null) continue;
+    if (f.badge) { const fx = f.fx(), o = fx.length ? fxChar(fx, f.a(), f.b(), 0, 1, t) : { c: f.a(), dy: 0, sh: "" }; f.el.style.background = o.c; f.el.style.transform = `translateY(${o.dy}px)`; f.el.style.filter = o.sh ? `drop-shadow(0 0 4px ${o.c})` : ""; }
+    else f.el.innerHTML = fxHtml(f.text(), f.fx(), f.a(), f.b(), t);
+  }
+  setTimeout(fxLoop, 33);
+}
+const userName = () => ($("#uname").textContent === "Nicht angemeldet" ? "Dein Name" : $("#uname").textContent);
+const LEGACY_FX = { gradient: ["gradient"], rainbow: ["rainbow"], pulse: ["glowing"], glow: ["glowing"], shimmer: ["shimmer"], wave: ["waving"], twist: ["rainbow"] };
+const fancy = () => !!(me && (me.plus || me.pro || me.dev));
+const ownsItem = (id) => !!me && (me.dev || me.owned.includes(id) || (me.plus && !(cat.bundles || []).some((b) => b.items.includes(id))) || (cat.bundles || []).some((b) => b.items.includes(id) && (me.advances || []).includes(b.adv)));
+const bundleOpen = (b) => !!me && (me.dev || (me.advances || []).includes(b.adv));
+const lvl = (xp) => 1 + Math.floor(Math.sqrt(Math.max(0, xp) / 40));
+const nameFxOf = (n) => n.effects || LEGACY_FX[n.effect] || [];
+const BADGE_FX = ["shaking", "waving", "flipping", "gradient", "rainbow", "metallic", "fade", "shimmer", "blinking", "chromatic", "fire", "glowing", "aurora", "sweep", "breathe", "neon"];
+// effects of one group cannot run together; the tiles of the others are greyed out
+const EXCL = [["gradient", "rainbow", "metallic", "chromatic", "fire", "aurora"], ["shaking", "waving", "flipping", "iterating"], ["skewing", "growing"], ["fade", "blinking", "glowing", "breathe"], ["glowing", "outline", "neon"]];
+const fxBlocked = (sel, fx) => sel.some((s) => s !== fx && EXCL.some((g) => g.includes(s) && g.includes(fx)));
+let nsel = [], bsel = [];
+const TILESETS = [{ box: "#nfx", count: "#ncount", list: NAME_UI, sel: () => nsel, add: (s) => { nsel = s; }, a: () => $("#n1").value, b: () => $("#n2").value },
+  { box: "#bfx", count: "#bcount", list: BADGE_UI, sel: () => bsel, add: (s) => { bsel = s; }, a: () => $("#c1").value, b: () => $("#c2").value }];
+function buildTiles() {
+  fxTargets.length = 0;
+  fxTargets.push({ el: $("#nprev"), text: userName, fx: () => (fancy() ? nsel : []), a: () => (fancy() ? $("#n1").value : "#ffffff"), b: () => $("#n2").value });
+  fxTargets.push({ el: $("#hname"), text: userName, fx: () => (fancy() ? nameFxOf(me.name) : []), a: () => (fancy() ? me.name.color : "#ffffff"), b: () => (me ? me.name.color2 : "#7c5cff") });
+  for (const ts of [{ el: "#bprev", ed: true }, { el: "#bprev2", ed: true }, { el: "#hbadge", ed: false }])
+    fxTargets.push({ el: $(ts.el), badge: true, fx: () => (fancy() ? (ts.ed ? bsel : nameFxOf(me.tag)) : []), a: () => (fancy() ? (ts.ed ? $("#c1").value : me.tag.color) : "#ffffff"), b: () => (ts.ed ? $("#c2").value : me?.tag.color2 || "#00d4ff") });
+  for (const ts of TILESETS) {
+    const box = $(ts.box); box.innerHTML = "";
+    for (const fx of ts.list) {
+      const t = document.createElement("div"); t.className = "tile"; t.dataset.fx = fx; box.appendChild(t);
+      fxTargets.push({ el: t, text: () => FX_LABEL[fx] || fx, fx: () => [fx], a: ts.a, b: ts.b });
+      t.onclick = () => { if (!fancy() || t.classList.contains("off")) return; const s = ts.sel(), i = s.indexOf(fx); if (i >= 0) s.splice(i, 1); else if (s.length < 5) s.push(fx); paintTiles(); };
+    }
+  }
+  paintTiles();
+}
+function paintTiles() {
+  for (const ts of TILESETS) {
+    const s = ts.sel();
+    $$(ts.box + " .tile").forEach((t) => { const on = s.includes(t.dataset.fx); t.classList.toggle("on", on); t.classList.toggle("off", !on && (s.length >= 5 || fxBlocked(s, t.dataset.fx) || !fancy())); });
+    $(ts.count).textContent = s.length + " / 5";
+  }
+}
+
+/* ---------- bundles ---------- */
+function renderBundles() {
+  const list = cat.bundles || []; const open = list.filter(bundleOpen).length;
+  $("#bcnt").textContent = `${open} / ${list.length} freigeschaltet`;
+  $("#bgrid").innerHTML = list.map((b) => { const ok = bundleOpen(b), items = b.items.map((id) => cat.items.find((i) => i.id === id)).filter(Boolean);
+    return `<div class="bun ${ok ? "ok" : "lockd"}"><div class="row"><b class="grow">${esc(b.name)}</b><span class="${ok ? "ok" : "mut"}" style="font-size:12px">${ok ? "Freigeschaltet" : "Aufgabe: " + esc(b.advText)}</span></div>
+      <div class="imgs">${items.map((i) => `<img src="previews/${i.id}.png" title="${esc(i.name)}" alt="">`).join("")}</div>${ok ? `<button class="btn p sm" data-eqb="${b.id}" style="margin-top:10px">Ausrüsten</button>` : ""}</div>`; }).join("");
+  $$("[data-eqb]").forEach((x) => x.onclick = guard(async () => { const b = list.find((y) => y.id === x.dataset.eqb); for (const t of cat.types) me = await lac.unequip(t.id); const seen = new Set(); for (const id of b.items) { const it = cat.items.find((i) => i.id === id); if (!it || seen.has(it.type)) continue; seen.add(it.type); me = await lac.equip(id, 0); } toast(b.name + " angelegt", true); await loadMe(); }));
+}
+
+/* ---------- hero (play page) ---------- */
+function setAvatar() { const u = $("#uname").textContent; const id = window._uuid; const src = id ? `https://mc-heads.net/body/${id}/260` : "logo.png"; for (const sel of ["#havatar"]) { $(sel).src = src; $(sel).onerror = () => { $(sel).onerror = null; $(sel).src = "logo.png"; }; } $("#avatar").src = id ? `https://mc-heads.net/avatar/${id}/28` : "logo-small.png"; }
+function renderHero() {
+  const p = cur, b = p ? btnState(p) : { text: "Starten", act: "", cls: "", off: true }, e = p ? st[p.id] : null;
+  $("#hgot").textContent = b.act === "stop" ? "Stoppen" : b.act === "start" ? "Starten" : b.text;
+  $("#hsub").textContent = p ? `${p.name} · ${LNAME[p.loader]} ${p.mc}` : "Erst ein Profil anlegen (+)";
+  const go = $("#hgo"); go.className = "lbtn " + (b.cls || ""); go.dataset.act = b.act || ""; go.disabled = !p || !b.act || !!b.off;
+  $("#hfill").style.width = (e && isActive(e) ? e.pct : 0) + "%";
+  $("#hlabel").innerHTML = !e ? "" : e.stage === "error" ? `<span class="bad">${esc(e.label)}</span>` : (e.stage === "closed" && e.label !== "Beendet" && !/null/.test(e.label)) ? `<span class="bad">${esc(e.label)}</span>` : e.stage === "running" ? '<span class="ok">Läuft</span>' : isActive(e) ? esc(e.label) : "";
+  const row = (x) => `<div class="prow ${cur?.id === x.id ? "on" : ""}" data-id="${x.id}">${picIc(x)}<div class="grow"><div class="nm">${esc(x.name)}</div><div class="meta">${LNAME[x.loader]} · ${esc(x.mc)} · ⏱ <span data-time="${x.id}">${fmtTime(x.playtime || 0)}</span></div></div></div>`;
+  $("#hlist").innerHTML = profiles.map(row).join("") || '<div class="mut">Noch keine Profile.</div>';
+  $("#hmenu").innerHTML = profiles.map(row).join("");
+  $$("#hlist .prow,#hmenu .prow").forEach((r) => r.onclick = () => { const p = profiles.find((x) => x.id === r.dataset.id), again = cur && cur.id === p.id && r.closest("#hlist"); cur = p; $("#hmenu").classList.remove("on"); renderHero(); if (again) openDetail(p); });   // a second click on the chosen profile opens its overview
+}
+$("#hlog").onclick = guard(async () => { $("#logtext").value = await lac.readLog(); modal("mlog"); const t = $("#logtext"); t.scrollTop = t.scrollHeight; });
+$("#logcopy").onclick = () => { navigator.clipboard.writeText($("#logtext").value); toast("Protokoll kopiert", true); };
+$("#logdir").onclick = guard(() => lac.openLogFolder());
+$("#hgo").onclick = guard(async () => { if (!cur) return; const a = $("#hgo").dataset.act; if (a === "start") { lines = []; await lac.launch(cur.id); } else if (a === "stop") lac.kill(); });
+$("#hpick").onclick = (e) => { e.stopPropagation(); $("#hmenu").classList.toggle("on"); };
+$("#hnew").onclick = () => { modal("mnew"); loadVersions(); };
+$("#acct").onclick = (e) => { e.stopPropagation(); $("#amenu").classList.toggle("on"); };
+document.addEventListener("click", () => { $("#amenu").classList.remove("on"); $("#hmenu").classList.remove("on"); });
+
+{ const _rp = renderProfiles; renderProfiles = function () { _rp(); renderHero(); }; }
+
+/* ---------- mods ---------- */
+function renderMods() {
+  $("#mprof").innerHTML = profiles.map((p) => `<option value="${p.id}" ${cur?.id === p.id ? "selected" : ""}>${esc(p.name)} · ${LNAME[p.loader]} ${esc(p.mc)}</option>`).join("") || "<option>Kein Profil</option>";
+  const p = profiles.find((x) => x.id === $("#mprof").value);
+  $("#minst").innerHTML = p ? (p.mods || []).map((m) => `<div class="item"><div class="grow"><b>${esc(m.title)}</b> ${m.dep ? '<span class="chip">Abhängigkeit</span>' : ""}</div>${m.dep || m.id === "P7dR8mSH" ? '<span class="mut" style="font-size:12px">automatisch</span>' : `<button class="btn sm d" data-rm="${m.id}">Entfernen</button>`}</div>`).join("") || '<div class="mut">Noch keine Mods. Fabric API kommt beim ersten Start automatisch dazu.</div>' : "–";
+  $$("[data-rm]").forEach((b) => b.onclick = guard(async () => { await lac.removeMod(p.id, b.dataset.rm); profiles = await lac.profiles(); cur = profiles.find((x) => x.id === cur?.id) || cur; renderProfiles(); renderMods(); }));
+}
+$("#mprof").onchange = () => { cur = profiles.find((p) => p.id === $("#mprof").value); renderProfiles(); renderMods(); };
+let modOff = 0;
+const modSearch = guard(async (more) => {
+  const pid = $("#mprof").value; if (!profiles.length) return toast("Erst ein Profil erstellen");
+  if (more !== true) { modOff = 0; window._hits = []; $("#mres").textContent = "Suche…"; }
+  const got = await lac.searchMods($("#mq").value, pid, modOff); window._hits = (window._hits || []).concat(got); modOff += got.length; const hits = window._hits; const _ks = scrollState();
+  $("#mres").innerHTML = hits.map((h, i) => `<div class="item"><img src="${esc(h.icon || "")}" alt=""><div class="grow"><b>${esc(h.title)}</b><div class="mut" style="font-size:12px">${esc(h.description)}</div></div><button class="btn sm" data-add="${i}">Installieren</button></div>`).join("") || '<div class="mut">Nichts gefunden.</div>';
+  $("#mres").insertAdjacentHTML("beforeend", got.length >= 20 ? '<div style="text-align:center;margin-top:10px"><button class="btn" id="mmore">Weitere</button></div>' : ""); if ($("#mmore")) $("#mmore").onclick = () => modSearch(true);
+  _ks();
+  $$("[data-add]").forEach((b) => b.onclick = guard(async () => { b.disabled = true; b.textContent = "…"; try { const r = await lac.addMod(pid, window._hits[b.dataset.add]); profiles = await lac.profiles(); cur = profiles.find((x) => x.id === pid); renderProfiles(); renderMods(); toast("Installiert: " + r.installed.join(", "), true); b.textContent = "✓"; } catch (e) { b.disabled = false; b.textContent = "Installieren"; throw e; } }));
+});
+$("#msearch").onclick = () => modSearch();
+$("#mq").onkeydown = (e) => { if (e.key === "Enter") modSearch(); };
+
+/* ---------- cosmetics ---------- */
+const thumb = (id, v) => `previews/${id}${v ? "_" + v : ""}.png`;
+/** picture of the model itself (no skin, no background): one hidden viewer renders every cosmetic once, the pictures are kept */
+const MODEL_TYPES = ["wings", "halo", "hat", "back", "pet", "boots", "morph", "buddy", "shield", "cape"], mthumbs = new Map(); let mtCanvas = null, mtView = null, mtChain = Promise.resolve();
+function modelThumb(it, v) {
+  const key = it.id + "|" + v; if (mthumbs.has(key)) return mthumbs.get(key);
+  const p = (mtChain = mtChain.then(async () => {
+    try {
+      if (!mtView) { mtCanvas = document.createElement("canvas"); mtCanvas.style.cssText = "position:fixed;left:-9999px;top:0;width:320px;height:240px"; document.body.appendChild(mtCanvas); mtView = new SkinView(mtCanvas); mtView.solo = true; }
+      if (!mtView.ok) return null;
+      const w = 320, h = 240; mtCanvas.width = w; mtCanvas.height = h; mtCanvas.style.width = w + "px"; mtCanvas.style.height = h + "px";
+      mtView.yaw = it.type === "wings" || it.type === "back" ? Math.PI - 0.3 : -0.55; mtView.pitch = 0.12; mtView.live = false;
+      if (it.type === "morph" || it.type === "buddy") { const d = await lac.entityGet(it.id); if (!d.json) return null; mtView.cos = []; await mtView.setEntities([{ json: d.json, png: d.png, scale: it.type === "morph" ? ({ morph_dragon: 0.2, morph_ravager: 0.8 }[it.id] || 1) : 1, dx: 0, dz: 0 }], true); await new Promise((r) => setTimeout(r, 80)); }
+      else { await mtView.setEntities([], false); await mtView.setCosmetics([{ id: it.id, variant: v }], (id) => meshLoad(id), null); }
+      return await mtView.snapshot(w, h);
+    } catch { return null; }
+  }));
+  mthumbs.set(key, p); return p;
+}
+/** fills every <img data-mt="id|variant"> of a grid with the model picture as soon as it is ready */
+function fillModelThumbs(root) {
+  for (const img of (root || document).querySelectorAll("img[data-mt]")) {
+    const [id, v] = img.dataset.mt.split("|"), it = cat.items.find((x) => x.id === id); if (!it) continue; img.removeAttribute("data-mt");
+    modelThumb(it, +v || 0).then((u) => { if (u) { img.src = u; img.classList.add("mdl"); } });
+  }
+}
+/** the cosmetic alone as a 3D model you can turn by hand (no skin): the same meshes and animation as on the figure */
+let soloEl = null, soloV = null;
+function soloView(it, v) {
+  if (!soloEl) { soloEl = document.createElement("canvas"); soloEl.style.cssText = "width:100%;height:260px;display:block"; }
+  $("#cvhost").appendChild(soloEl);
+  if (!soloV) { soloV = new SkinView(soloEl); soloV.solo = true; } if (!soloV.ok) return;
+  const key = it.id + "|" + v; if (soloV.cosFor === key) { soloV.draw(); return; } soloV.cosFor = key;
+  soloV.yaw = it.type === "wings" || it.type === "back" ? Math.PI - 0.3 : -0.5; soloV.pitch = 0.08; soloV.setEntities([], false); soloV.setCosmetics([], () => null);
+  if (it.type === "morph" || it.type === "buddy") lac.entityGet(it.id).then((d) => { if (soloV.cosFor === key && d.json) soloV.setEntities([{ json: d.json, png: d.png, scale: it.type === "morph" ? ({ morph_dragon: 0.2, morph_ravager: 0.8 }[it.id] || 1) : 1, dx: 0, dz: 0 }], true); });
+  else soloV.setCosmetics([{ id: it.id, variant: v }], (id) => meshLoad(id), (l, t) => lac.meshFrames(l, t));
+}
+/** who a cosmetic is for: shown as a small tag on every card; Dev cosmetics are only listed for Devs */
+const audience = (it) => it.rank ? { t: it.rank === "dev" ? "DEV" : it.rank === "plus" ? "PLUS" : "PRO", c: "a-" + it.rank } : it.plus ? { t: "LAC+", c: "a-plus" } : it.bundle || (cat.bundles || []).some((b) => b.items.includes(it.id)) ? { t: "BUNDLE", c: "a-bundle" } : { t: "COINS", c: "a-coins" };
+const audTag = (it) => { const a = audience(it); return `<span class="aud ${a.c}">${a.t}</span>`; };
+const visibleItem = (it) => it.rank !== "dev" || !!(me && me.dev);
+function renderCos() {
+  $("#ctypes").innerHTML = cat.types.map((t) => `<button class="btn sm ${ctype === t.id ? "p" : ""}" data-t="${t.id}">${esc(t.label)}</button>`).join("");
+  $$("[data-t]").forEach((b) => b.onclick = () => { ctype = b.dataset.t; renderCos(); });
+  $("#cgrid").innerHTML = cat.items.filter((i) => i.type === ctype && visibleItem(i)).map((it) => {
+    const own = ownsItem(it.id), eq = me && me.equipped.includes(it.id), v = variant[it.id] ?? (me?.chroma?.[it.id] || 0);
+    return `<div class="cc ${eq ? "eq" : ""} ${picked === it.id ? "sel" : ""} ${own ? "" : "lock"}" data-id="${it.id}"><div class="th">${audTag(it)}${MODEL_TYPES.includes(it.type) ? `<img data-mt="${it.id}|${v}" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="">` : `<img src="${thumb(it.id, v)}" onerror="this.onerror=null;this.src='${thumb(it.id, 0)}'" alt="">`}</div><div class="meta"><b>${esc(it.name)}</b><div style="font-size:12px" class="${eq ? "ok" : own ? "mut" : "gold"}">${eq ? "Angelegt" : own ? "Freigeschaltet" : it.rank ? "Nur Rang " + it.rank.toUpperCase() : it.bundle ? "Nur über Bundle" : it.price + " Coins"}</div></div></div>`; }).join("");
+  $$(".cc").forEach((c) => c.onclick = () => { picked = c.dataset.id; renderCos(); });
+  fillModelThumbs($("#cgrid"));
+  const it = cat.items.find((i) => i.id === picked);
+  if (!it) { $("#cprev").innerHTML = '<div class="mut">Wähle ein Cosmetic.</div>'; return; }
+  const own = ownsItem(it.id), eq = me && me.equipped.includes(it.id), v = variant[it.id] ?? (me?.chroma?.[it.id] || 0);
+  const sw = it.chroma ? HUE.map((h, n) => `<button class="sw ${n === v ? "on" : ""}" data-v="${n}" style="background:${n === 0 ? "#cfd3e6" : `hsl(${h} 85% 58%)`}"></button>`).join("") : '<span class="mut" style="font-size:12px">Keine weiteren Farben</span>';
+  const solo3d = MODEL_TYPES.includes(it.type);
+  $("#cprev").innerHTML = `<div class="big" id="cvhost">${solo3d ? "" : `<img src="${thumb(it.id, v)}" onerror="this.onerror=null;this.src='${thumb(it.id, 0)}'" alt="">`}</div><h3>${esc(it.name)}</h3><div class="row" style="margin-bottom:14px">${sw}</div>
+   ${false ? '<div id="adj"><h3 style="margin:14px 0 4px;font-size:13px">Größe und Position</h3><div class="range"><span>Größe</span><input type="range" min="0.4" max="2.5" step="0.05" id="as"><b id="asv"></b></div><div class="range"><span>X</span><input type="range" min="-12" max="12" step="0.5" id="ax"><b id="axv"></b></div><div class="range"><span>Y</span><input type="range" min="-12" max="12" step="0.5" id="ay"><b id="ayv"></b></div><div class="range"><span>Z</span><input type="range" min="-12" max="12" step="0.5" id="az"><b id="azv"></b></div><button class="btn sm" id="areset">Zurücksetzen</button></div>' : ""}
+   ${me && it.type === "halo" ? `<label class="row" style="gap:8px;margin:0 0 12px"><input type="checkbox" id="halof" ${me.haloFollow !== false ? "checked" : ""}> Halo bleibt direkt über dem Kopf (aus: bleibt über dem Skin, egal wohin du schaust)</label>` : ""}
+   ${!me ? '<div class="mut">Zum Anlegen einmal mit Microsoft anmelden.</div>' : eq ? '<button class="btn" id="cact">Ablegen</button>' : own ? '<button class="btn p" id="cact">Anlegen</button>' : `<button class="btn p" id="cact" ${it.bundle || me.coins < it.price ? "disabled" : ""}>${it.bundle ? "Nur über Bundle" : "Kaufen · " + it.price + " Coins"}</button>`}`;
+  if (solo3d) soloView(it, v);
+  $$("#cprev .sw").forEach((b) => b.onclick = guard(async () => { variant[it.id] = +b.dataset.v; if (eq) { me = await lac.equip(it.id, variant[it.id]); } renderCos(); }));
+  if (me && $("#adj")) { const def = it.def || [1, 0, 0, 0], a = me.adjust?.[it.id] || def; [["as", 0], ["ax", 1], ["ay", 2], ["az", 3]].forEach(([id, k]) => { const e = $("#" + id); e.min = k ? def[k] - 8 : Math.max(0.1, def[0] - 0.8); e.max = k ? def[k] + 8 : def[0] + 0.8; }); [["as", 0], ["ax", 1], ["ay", 2], ["az", 3]].forEach(([id, k]) => { const el = $("#" + id), out = $("#" + id + "v"); el.value = a[k]; out.textContent = (+a[k]).toFixed(k ? 1 : 2);
+      el.oninput = () => { out.textContent = (+el.value).toFixed(k ? 1 : 2); }; el.onchange = guard(async () => { me = await lac.setAdjust(it.id, +$("#as").value, +$("#ax").value, +$("#ay").value, +$("#az").value); }); });
+    $("#areset").onclick = guard(async () => { me = await lac.setAdjust(it.id, def[0], def[1], def[2], def[3]); renderCos(); }); }
+  if ($("#halof")) $("#halof").onchange = guard(async () => { me = await lac.setHalo($("#halof").checked); });
+  const act = $("#cact"); if (act) act.onclick = guard(async () => {
+    if (eq) me = await lac.unequip(it.type); else if (own) me = await lac.equip(it.id, variant[it.id] || 0); else { await lac.buy(it.id); me = await lac.equip(it.id, variant[it.id] || 0); }
+    await loadMe(); });
+}
+
+/* ---------- LAC+ / badge ---------- */
+$("#redeem").onclick = guard(async () => { me = await lac.redeem($("#code").value); $("#rmsg").innerHTML = '<span class="ok">LAC+ aktiviert!</span>'; await loadMe(); });
+$("#tofree").onclick = guard(async () => { if (!(await ask("Wirklich zu Free wechseln? Alle Vorteile enden, bis du den Code wieder eingibst."))) return; me = await lac.toFree(); $("#rmsg").textContent = "Du bist jetzt Free."; await loadMe(); });
+const EFFECTS = ["solid", "gradient", "rainbow", "pulse", "glow", "shimmer", "wave", "twist"];
+const FONTMAP = { default: "inherit", poppins: "LacPoppins", righteous: "LacRighteous", audiowide: "LacAudiowide", pressstart: "LacPress" };
+const fxAllowed = () => !!(me && (me.plus || me.dev));   // Pro: colours only, animations from LAC+
+function lockStyle() { const lock = !fancy(); $$("#nfx,#bfx").forEach((e) => e.classList.toggle("lock", fancy() && !fxAllowed())); ["#bcard .row", "#ncard .row"].forEach((s) => $$(s).forEach((r) => r.classList.toggle("lock", lock))); $("#tsave").disabled = lock; $("#nsave").disabled = lock; }
+$("#tsave").onclick = guard(async () => { me = await lac.setTag($("#c1").value, $("#c2").value, bsel); toast("Badge gespeichert", true); await loadMe(); });
+$("#nsave").onclick = guard(async () => { me = await lac.setName($("#n1").value, $("#n2").value, nsel, "default"); toast("Name gespeichert", true); await loadMe(); });
+$("#syncsave").onclick = guard(async () => { const u = await lac.setSync($("#syncurl").value); toast(u ? "Gespeichert. Gilt ab dem nächsten Spielstart." : "Sync ausgeschaltet", true); });
+lac.getSync().then((u) => { $("#syncurl").value = u || ""; }).catch(() => {});
+
+/* ---- profile pictures, LAC Modpacks ---- */
+let ROOTDIR = ""; lac.sysRoot().then((r) => { ROOTDIR = String(r).replace(/\\/g, "/"); renderProfiles(); });
+const picIc = (p) => p.icon && ROOTDIR ? `<div class="ic" style="background:#0c0c13 center/cover url('file:///${esc(ROOTDIR)}/icons/${esc(p.icon)}')"></div>` : `<div class="ic">${esc(p.name[0]?.toUpperCase() || "?")}</div>`;
+let LP = [], lpShown = 20;
+const renderLP = guard(async () => {
+  $("#lplist").innerHTML = '<div class="mut">Lade…</div>';
+  LP = await lac.packsList(); drawLP();
+});
+function drawLP() {
+  const _ks = scrollState();
+  const q = $("#lpq").value.trim().toLowerCase();
+  const all = LP.filter((p) => !q || [p.name, p.creator, p.code, p.desc].some((v) => String(v || "").toLowerCase().includes(q))), rows = all.slice(0, lpShown);
+  $("#lplist").innerHTML = rows.map((p) => `<div class="item"><div class="ic" style="width:46px;height:46px;border-radius:12px;flex:none;background:#0c0c13 center/cover ${p.iconUrl ? `url('${esc(p.iconUrl)}')` : "linear-gradient(135deg,var(--a),var(--b))"}"></div>
+   <div class="grow"><b>${esc(p.name)}</b> <span class="chip ${p.loader}">${LNAME[p.loader] || esc(p.loader)}</span> <span class="chip">Minecraft ${esc(p.mc)}</span> <span class="chip">${p.mods} Mods</span>
+   <div class="mut" style="font-size:12px">von ${esc(p.creator)} · Code <b>${esc(p.code)}</b></div><div class="mut" style="font-size:12px">${esc(p.desc || "")}</div></div>
+   ${(window._lpU || []).filter((u) => (profiles.find((x) => x.id === u.profile) || {}).fromPack === p.id).map((u) => `<button class="btn p sm" data-lpu="${esc(u.profile)}">Update laden</button>`).join("")}<button class="btn p sm" data-lpi="${esc(p.id)}">Installieren</button>${me && me.dev ? `<button class="btn d sm" data-lpd="${esc(p.id)}">Entfernen</button>` : ""}</div>`).join("") + (all.length > lpShown ? '<div style="text-align:center;margin-top:10px"><button class="btn" id="lpmore">Weitere</button></div>' : "") || '<div class="mut">Keine Modpacks gefunden.</div>';
+  if ($("#lpmore")) $("#lpmore").onclick = () => { lpShown += 20; drawLP(); };
+  _ks();
+  $$("[data-lpu]").forEach((b) => b.onclick = updateLP(b.dataset.lpu, b));
+  $$("[data-lpi]").forEach((b) => b.onclick = installPack2(b.dataset.lpi, b));
+  $$("[data-lpd]").forEach((b) => b.onclick = guard(async () => { if (!(await ask("Dieses Modpack für alle entfernen?"))) return; await lac.packsRemove(b.dataset.lpd); toast("Entfernt", true); renderLP(); }));
+}
+/* LAC modpack updates: a dev publishes a new version; everybody who has the pack sees it and loads it with one click, settings and packs stay */
+window._lpU = [];
+async function checkLpUpd(announce) {
+  try { window._lpU = await lac.packsUpdates(); } catch { window._lpU = []; }
+  if (announce && window._lpU.length) toast("Modpack-Update verfügbar: " + window._lpU.map((u) => u.name).join(", "), true);
+  renderProfiles();
+}
+const updateLP = (profileId, btn) => guard(async () => {
+  if (btn) { btn.disabled = true; btn.textContent = "…"; }
+  try { toast("Modpack wird aktualisiert, Einstellungen und Pakete bleiben…", true); const r = await lac.packsUpdate(profileId); profiles = r.profiles; cur = profiles.find((x) => x.id === profileId) || cur; await checkLpUpd(false); renderMods(); drawLP(); toast("Modpack aktualisiert auf Version " + r.version, true); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = "Update laden"; } }
+});
+const installPack2 = (idOrCode, btn) => guard(async () => {
+  if (btn) { btn.disabled = true; btn.textContent = "…"; }
+  try { toast("Modpack wird installiert, das dauert etwas…", true); const r = await lac.packsInstall(idOrCode); profiles = r.profiles; cur = r.profile; renderProfiles(); toast(`${r.profile.name} installiert`, true); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = "Installieren"; } }
+});
+$("#lpq").oninput = () => { lpShown = 20; drawLP(); };
+$("#lpgo").onclick = () => { const c = $("#lpcode").value.trim(); if (c) installPack2(c, $("#lpgo"))(); };
+$("#upcheck").onclick = guard(async () => { const b = $("#upcheck"); b.disabled = true; $("#upinfo").textContent = "Suche…"; try { const r = await lac.checkUpdate(); $("#upinfo").textContent = `Launcher ${r.version}: ${r.launcher}. LAC-Mod: ${r.mods ? r.mods + " neue(r) Build(s) geladen" : "aktuell"}.`; } finally { b.disabled = false; } });
+function showUpd(s) {
+  const p = $("#upop"), ready = s.state === "ready";
+  p.style.display = s.state === "downloading" || ready ? "" : "none";
+  $("#uptitle").textContent = ready ? "Update bereit" : "Update wird geladen";
+  $("#uptext").textContent = ready ? `LAC Launcher ${s.version} ist geladen. Der Launcher installiert und startet gleich neu.` : `LAC Launcher ${s.version || ""}: ${s.percent || 0} %`;
+  $("#upbar").style.width = (s.percent || 0) + "%"; $("#upnow").style.display = ready ? "" : "none"; $("#upinst").style.display = ready ? "" : "none";
+}
+lac.onUpdate(showUpd); lac.updateState().then(showUpd).catch(() => {});
+$("#upnow").onclick = $("#upinst").onclick = () => lac.installUpdate();
+$("#lfont").onchange = () => { try { localStorage.setItem("lfont", $("#lfont").value); } catch {} applyFont(); };
+function applyFont() { let f = ""; try { f = localStorage.getItem("lfont") || ""; } catch {} document.body.style.fontFamily = f ? f + ",system-ui,sans-serif" : ""; $("#lfont").value = f; }
+
+/* ---------- downloads ---------- */
+function renderDl() {
+  $("#dlist").innerHTML = builds.length ? builds.map((b, i) => `<div class="item"><span class="chip ${b.loader}">${LNAME[b.loader]}</span><span class="grow"><b>Minecraft ${esc(b.mc)}</b><div class="mut" style="font-size:12px">${esc(b.file)}</div></span><button class="btn p sm" data-dl="${i}">Herunterladen</button></div>`).join("") : "Noch keine Builds.";
+  $$("[data-dl]").forEach((x) => x.onclick = guard(async () => { const b = builds[x.dataset.dl]; const f = await lac.distSave({ loader: b.loader, mc: b.mc }); if (f) toast("Gespeichert: " + f, true); }));
+}
+function loadDlVersions() { renderDl(); }
+
+/* ---------- start ---------- */
+(async () => {
+  cat = await lac.catalog(); profiles = await lac.profiles(); cur = profiles[0] || null; builds = await lac.distList();
+  try { sysMb = (await lac.sysRam()).totalMb; } catch {} applyFont(); buildTiles(); renderProfiles(); setTimeout(() => checkLpUpd(true), 6000); loadVersions(); renderDl(); renderCos(); fxLoop(); await loadUser(); setAvatar(); renderHero();
+})().catch((e) => toast(clean(e)));
+</script><script>
+/** keeps every scroll position when a list is drawn again ("Weitere" must not jump back to the top): call before, then the returned function after */
+function scrollState() {
+  const els = ["main", "#pres", "#dares", "#mdetbox", "#lplist", "#mres", "#shopgrid"].map((q) => $(q)), pos = els.map((e) => (e ? e.scrollTop : 0));
+  const back = () => els.forEach((e, i) => { if (e) { const b = e.style.scrollBehavior; e.style.scrollBehavior = "auto"; e.scrollTop = pos[i]; e.style.scrollBehavior = b; } });
+  return () => { back(); requestAnimationFrame(back); setTimeout(back, 60); };
+}
+/* ---------- design v2: rail glide, hero, chips, window ---------- */
+function moveInd() {
+  $$("aside.rail nav").forEach((nav) => { const ind = nav.querySelector(".rind"), on = nav.querySelector("button.on"); if (!ind) return;
+    if (!on || on.offsetParent === null) { ind.classList.remove("on"); return; }
+    ind.style.height = on.offsetHeight + "px"; ind.style.transform = "translateY(" + on.offsetTop + "px)"; ind.classList.add("on"); });
+}
+$$("nav button").forEach((b) => b.addEventListener("click", () => requestAnimationFrame(moveInd)));
+window.addEventListener("resize", moveInd); setTimeout(moveInd, 60); setTimeout(moveInd, 600);
+
+let heroShots = [], heroShotsAt = 0, heroPic = "";
+async function loadHeroShots() { if (Date.now() - heroShotsAt < 120000) return; heroShotsAt = Date.now(); try { heroShots = await lac.shots(); } catch { heroShots = []; } heroExtra(); }
+function setHeroPic(p) {
+  const el = $("#hpic"); if (!el) return;
+  const s = p && heroShots.find((x) => (x.file || "").replace(/\\/g, "/").includes("/instances/" + p.id + "/")) || heroShots[0];
+  const url = s && s.thumb ? s.thumb : ""; if (url === heroPic) return; heroPic = url;
+  if (!url) { el.classList.remove("on"); return; }
+  el.classList.remove("on"); setTimeout(() => { el.style.backgroundImage = "url('" + url + "')"; el.classList.add("on"); }, 350);
+}
+function heroExtra() {
+  const p = cur, t = $("#htitle"); if (!t) return;
+  t.textContent = p ? p.name : "LAC Client"; t.classList.toggle("long", t.textContent.length > 13);
+  $("#hkick").textContent = p ? LNAME[p.loader] + " · Minecraft " + p.mc : "Willkommen";
+  $("#hdesc").textContent = p ? [(p.mods || []).length + " Mods", ramLabel(p.ram), p.creator ? "von " + p.creator : ""].filter(Boolean).join(" · ") + (p.desc ? "\n" + p.desc : "") : "Lege dein erstes Profil an, um zu spielen.";
+  $("#hsub").textContent = p ? p.name : "Profil wählen";
+  setHeroPic(p); topChip();
+}
+{ const _rh = renderHero; renderHero = function () { _rh(); $("#hsub").textContent = cur ? cur.name : "Profil wählen"; heroExtra(); }; }
+$("#hset").onclick = () => { if (cur) openSettings(cur); };
+$("#hskin").onclick = () => $('nav button[data-p="skins"]').click();
+
+/* the status chip in the middle shows what the game is doing (loading, files, starting) */
+function topChip() {
+  const chip = $("#tchip"); if (!chip) return;
+  const act = Object.entries(st).find(([, e]) => e && isActive(e) && e.stage !== "running");
+  if (!act) { chip.classList.remove("on"); return; }
+  const [id, e] = act, p = profiles.find((x) => x.id === id);
+  $("#tchipt").textContent = (p ? p.name : "Minecraft") + (e.pct ? " · " + Math.round(e.pct) + " %" : ""); $("#tchips").textContent = e.label || ""; chip.classList.add("on");
+}
+/* friends online */
+async function frChip() {
+  try { const u = await lac.user(); if (!u.online) throw 0; const r = await lac.friends(); const n = (r.friends || []).filter((f) => f.status && f.status !== "offline").length; $("#tfrn").textContent = n; $("#tfr").classList.add("on"); }
+  catch { $("#tfr").classList.remove("on"); }
+}
+setTimeout(frChip, 5000); setInterval(frChip, 45000); setTimeout(loadHeroShots, 1500); setInterval(loadHeroShots, 130000);
+
+/* the skin on the start page: a real 3D model, turned by hand only */
+let heroView = null, heroSkinFor = "";
+async function heroSkin() {
+  const id = window._uuid; if (!id || id === heroSkinFor) return; heroSkinFor = id;
+  try {
+    if (!heroView) heroView = new SkinView($("#hskinv")); if (!heroView.ok) throw 0;
+    const r = await lac.skinByUuid(id); if (!(await heroView.setSkin(r.pic, r.slim))) throw 0;
+    $("#hskinv").style.display = ""; $("#havatar").hidden = true;
+  } catch { $("#hskinv").style.display = "none"; $("#havatar").hidden = false; }
+}
+{ const _sa = setAvatar; setAvatar = function () { _sa(); heroSkin(); }; }
+$('nav button[data-p="play"]').addEventListener("click", () => { heroSkinFor = ""; heroSkin(); });
+setTimeout(heroSkin, 800);
+
+$("#wmin").onclick = () => lac.winMin(); $("#wmax").onclick = () => lac.winMax(); $("#wx").onclick = () => lac.winClose();
+</script>
+<script>
+/* ---------- play dock: the start button stays within reach on every tab ---------- */
+function dockUpdate() {
+  const d = $("#dock"); if (!d) return; const on = !$("#play").classList.contains("on");
+  d.classList.toggle("on", on && !!cur);
+  if (!cur) return;
+  const go = $("#hgo"); $("#dockn").textContent = cur.name; $("#docks").textContent = ($("#hlabel").textContent || (LNAME[cur.loader] + " · " + cur.mc)).slice(0, 40);
+  const b = $("#dockgo"); b.className = "lbtn sm " + (go.className.replace("lbtn", "").trim()); b.disabled = go.disabled; $("#dockgot").textContent = $("#hgot").textContent;
+  const av = $("#dockav"); if (window._uuid) { const u = "https://mc-heads.net/avatar/" + window._uuid + "/64"; if (av.dataset.u !== u) { av.dataset.u = u; av.src = u; } }
+}
+$("#dockgo").onclick = () => $("#hgo").click();
+$('#dock .dt').onclick = () => $('nav button[data-p="play"]').click();
+{ const _rh2 = renderHero; renderHero = function () { _rh2(); dockUpdate(); }; }
+$$("nav button").forEach((b) => b.addEventListener("click", () => setTimeout(dockUpdate, 0)));
+setInterval(dockUpdate, 1500);
+
+/* ---------- shop: cosmetics for coins ---------- */
+let shopType = "";
+const buyable = (it) => it.price > 0 && !it.bundle && !it.plus && !it.rank;
+function renderShop() {
+  if (!me) { $("#shopgrid").innerHTML = '<div class="mut">Zum Kaufen bitte mit Microsoft anmelden.</div>'; return; }
+  $("#shopcoins").textContent = me.coins + " Coins";
+  const types = cat.types.filter((t) => cat.items.some((i) => i.type === t.id && buyable(i))); if (!types.some((t) => t.id === shopType)) shopType = (types[0] || {}).id || "";
+  $("#shoptypes").innerHTML = types.map((t) => `<button class="btn sm ${t.id === shopType ? "p" : ""}" data-st="${t.id}">${esc(t.label)}</button>`).join("");
+  $$("[data-st]").forEach((b) => b.onclick = () => { shopType = b.dataset.st; renderShop(); });
+  $("#shopgrid").innerHTML = cat.items.filter((i) => i.type === shopType && buyable(i)).map((it) => {
+    const own = ownsItem(it.id), can = me.coins >= it.price;
+    return `<div class="cc"><div class="th">${audTag(it)}${MODEL_TYPES.includes(it.type) ? `<img data-mt="${it.id}|0" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="">` : `<img src="${thumb(it.id, 0)}" alt="">`}</div><div class="meta"><b>${esc(it.name)}</b><div class="row" style="margin-top:6px;gap:8px"><span class="gold" style="font-size:13px">${it.price} Coins</span><span class="grow"></span>${own ? '<span class="ok" style="font-size:12px">Besitzt du</span>' : `<button class="btn sm ${can ? "p" : ""}" data-buy="${it.id}" ${can ? "" : "disabled"}>Kaufen</button>`}</div></div></div>`;
+  }).join("") || '<div class="mut">Nichts zu kaufen.</div>';
+  fillModelThumbs($("#shopgrid"));
+  $$("[data-buy]").forEach((b) => b.onclick = guard(async () => { b.disabled = true; me = await lac.buy(b.dataset.buy); toast("Gekauft: " + (cat.items.find((i) => i.id === b.dataset.buy) || {}).name, true); await loadMe(); renderShop(); }));
+}
+$('nav button[data-p="shop"]').addEventListener("click", renderShop);
+
+/* ---------- equipped cosmetics next to the skin ---------- */
+function eqStrips() {
+  const ids = (me && me.equipped) || [], chroma = (me && me.chroma) || {};
+  for (const el of [$("#eqstrip"), $("#eqstrip2")]) if (el) el.innerHTML = "";   // the models are on the figure itself now, no pictures
+  const cape = ids.find((id) => id.startsWith("cape_")), url = cape ? "capes/" + cape + ".png" : "";
+  const typeOf = (id) => (cat.items.find((x) => x.id === id) || {}).type, MESH = ["wings", "halo", "hat", "back", "pet", "boots"];
+  const list = ids.filter((id) => MESH.includes(typeOf(id))).map((id) => ({ id, variant: chroma[id] || 0 })), key = JSON.stringify(list);
+  const morph = ids.find((id) => id.startsWith("morph_")), buddy = ids.find((id) => id.startsWith("buddy_")), ekey = (morph || "") + "|" + (buddy || "");
+  const SCALE = { morph_dragon: 0.2, morph_ravager: 0.8 };
+  for (const v of [heroView, skView]) if (v && v.ok) {
+    if (v.capeFor !== url) { v.capeFor = url; v.setCape(url || null); }
+    if (v.cosFor !== key) { v.cosFor = key; v.setCosmetics(list, (id) => meshLoad(id), (l, t) => lac.meshFrames(l, t)); }
+    if (v.entFor !== ekey) {   // a Transform replaces the player model; a pet stands beside it
+      v.entFor = ekey; const want = [];
+      (async () => {
+        if (morph) { const d = await lac.entityGet(morph); if (d.json) want.push({ json: d.json, png: d.png, scale: SCALE[morph] || 1, dx: 0, dz: 0 }); }
+        if (buddy) { const d = await lac.entityGet(buddy); if (d.json) want.push({ json: d.json, png: d.png, scale: 1, dx: morph ? 26 : 20, dz: 6 }); }
+        v.setEntities(want, !!morph);
+      })();
+    }
+  }
+  for (const h of [$("#morph1"), $("#morph2")]) if (h) h.style.display = "none";
+  for (const c of [$("#hskinv"), $("#skv")]) if (c) c.style.visibility = "";
+}
+const meshCacheJs = new Map(); const meshLoad = (id) => { if (!meshCacheJs.has(id)) meshCacheJs.set(id, lac.meshGet(id)); return meshCacheJs.get(id); };
+{ const _lm = loadMe; loadMe = async function () { await _lm(); eqStrips(); if (!$("#shop").classList.contains("on")) return; renderShop(); }; }
+setInterval(eqStrips, 4000); setTimeout(eqStrips, 2500);
+</script>
+<script>
+/* ---------- rail categories: only the buttons of the chosen category are shown ---------- */
+let railCat = "play";
+function setCat(c) {
+  railCat = c;
+  $$("#rcats button").forEach((b) => b.classList.toggle("on", b.dataset.cat === c));
+  $$("aside.rail nav:first-of-type button").forEach((b) => b.classList.toggle("cx", b.dataset.c !== c));
+  requestAnimationFrame(moveInd); setTimeout(moveInd, 60);
+}
+$$("#rcats button").forEach((b) => b.onclick = () => setCat(b.dataset.cat));
+$$("aside.rail nav:first-of-type button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.c !== railCat) setCat(b.dataset.c); }));
+setCat("play");
+{ const _rh3 = renderHero; renderHero = function () { _rh3(); const m = $("#hmenu"); if (m) { m.insertAdjacentHTML("beforeend", '<div class="prow" id="hmenunew"><div class="ic" style="display:grid;place-items:center;background:linear-gradient(135deg,var(--a),var(--b))">+</div><div class="grow"><div class="nm">Neues Profil</div></div></div>'); $("#hmenunew").onclick = () => { m.classList.remove("on"); $("#hnew").click(); }; } }; }
+</script>
+<script>
+/* ---------- navigation v3: headings above the groups; every page button is always visible ---------- */
+(function () {
+  const names = { play: "Spielen", style: "Aussehen", social: "Sozial", more: "Mehr" }; let last = "";
+  for (const b of $$("aside.rail nav:first-of-type button[data-c]")) { if (b.dataset.c !== last) { last = b.dataset.c; const h = document.createElement("div"); h.className = "rhead"; h.textContent = names[b.dataset.c]; b.parentNode.insertBefore(h, b); } }
+  $$("aside.rail nav:first-of-type button").forEach((b) => b.classList.remove("cx"));
+  setCat = function () { requestAnimationFrame(moveInd); };
+  setTimeout(moveInd, 80); setTimeout(moveInd, 700);
+  const set = $('aside.rail nav button[data-p="set"]'); if (set) set.addEventListener("click", () => setTimeout(moveInd, 0));
+})();
+/* ---------- Ctrl+K: one search box for pages, profiles and cosmetics ---------- */
+(function () {
+  const box = document.createElement("div"); box.id = "kpal"; box.innerHTML = '<div class="kp"><input id="kq" placeholder="Suchen: Seite, Profil oder Cosmetic …" autocomplete="off"><div id="kr"></div></div>'; document.body.appendChild(box);
+  let sel = 0, list = [];
+  const open = () => { box.classList.add("on"); $("#kq").value = ""; draw(); $("#kq").focus(); }, close = () => box.classList.remove("on");
+  const entries = () => [
+    ...$$("aside.rail nav button[data-p]").filter((b) => b.style.display !== "none").map((b) => ({ k: "Seite", t: b.textContent.trim(), go: () => b.click() })),
+    ...(profiles || []).map((p) => ({ k: "Profil starten", t: p.name, go: guard(async () => { lines = []; await lac.launch(p.id); }) })),
+    ...((cat && cat.items) || []).filter((i) => visibleItem(i)).map((i) => ({ k: "Cosmetic", t: i.name, go: () => { $('aside.rail nav button[data-p="cos"]').click(); ctype = i.type; picked = i.id; renderCos(); } })),
+  ];
+  function draw() {
+    const q = $("#kq").value.trim().toLowerCase(); list = entries().filter((e) => !q || e.t.toLowerCase().includes(q)).slice(0, 12); sel = Math.min(sel, Math.max(0, list.length - 1));
+    $("#kr").innerHTML = list.map((e, i) => `<div class="kri${i === sel ? " on" : ""}" data-i="${i}"><span>${esc(e.t)}</span><small>${e.k}</small></div>`).join("") || '<div class="kri"><span class="mut">Nichts gefunden</span></div>';
+  }
+  $("#kq").oninput = () => { sel = 0; draw(); };
+  $("#kr").onclick = (e) => { const r = e.target.closest(".kri[data-i]"); if (r) { close(); list[+r.dataset.i].go(); } };
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); box.classList.contains("on") ? close() : open(); return; }
+    if (!box.classList.contains("on")) return;
+    if (e.key === "Escape") close(); else if (e.key === "ArrowDown") { sel = Math.min(sel + 1, list.length - 1); draw(); e.preventDefault(); } else if (e.key === "ArrowUp") { sel = Math.max(sel - 1, 0); draw(); e.preventDefault(); } else if (e.key === "Enter" && list[sel]) { close(); list[sel].go(); }
+  });
+  box.onmousedown = (e) => { if (e.target === box) close(); };
+})();
+</script>
+</body></html>
