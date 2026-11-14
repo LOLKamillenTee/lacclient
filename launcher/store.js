@@ -74,6 +74,8 @@ module.exports = {
   syncKey(uuid) { edit(uuid, (d) => { if (!d.syncKey || d.syncKey.length < 32) d.syncKey = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, ""); }); return read().users[uuid].syncKey; },
   devCode(uuid) { const d = read().users[uuid]; return d && d.dev ? d.devCode || "" : ""; },
   me(uuid) { const f = read(); return Object.assign(blank(), f.users[uuid] || {}); },
+  /** a rank the sync service confirmed for a one-time code (it keeps the rank for good, there is no code to show again) */
+  grantRank(uuid, rank) { return edit(uuid, (d) => { if (rank === "pro") d.pro = true; else if (rank === "plus") d.plus = true; }); },
   redeem(uuid, code) {
     const h = crypto.createHash("sha256").update("lac-code:" + code).digest("hex");
     if (h === DEV_HASH) return edit(uuid, (d) => { if (d.dev) return "Dev-Rang ist schon aktiv"; d.dev = true; d.devCode = String(code); });

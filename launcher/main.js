@@ -81,7 +81,18 @@ ipcMain.handle("logout", () => { session = null; const { refresh, ...rest } = re
 ipcMain.handle("store:catalog", () => store.catalog());
 ipcMain.handle("store:me", () => store.me(uuid()));
 const act = (fn) => (_e, ...a) => { const err = fn(uuid(), ...a); if (err) throw new Error(err); return store.me(uuid()); };
-ipcMain.handle("store:redeem", act((u, code) => store.redeem(u, String(code).trim())));
+ipcMain.handle("store:redeem", async (_e, code) => {
+  const u = uuid(); code = String(code).trim();
+  let err = store.redeem(u, code);
+  if (err === "Ungültiger Code") {   // not one of the fixed codes: maybe a one-time code made by a Dev, which only the sync service can check
+    const r = await fetch(packs.base() + "/v1/redeem", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ uuid: u.replace(/-/g, ""), key: store.syncKey(u), code: code.toUpperCase() }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || "Server meldet " + r.status);
+    err = store.grantRank(u, j.rank);
+  }
+  if (err) throw new Error(err);
+  return store.me(u);
+});
 ipcMain.handle("store:cancel", act((u) => store.cancel(u)));
 ipcMain.handle("store:cancelpro", act((u) => store.cancelPro(u)));
 ipcMain.handle("store:tofree", act((u) => store.toFree(u)));
@@ -347,6 +358,11 @@ ipcMain.handle("shots:share", async (e, file) => {
 ipcMain.handle("shots:folder", (e, file) => { if (insideInstances(String(file))) shell.showItemInFolder(path.resolve(String(file))); return true; });
 
 /* ---------- Dev: roles of players ---------- */
+ipcMain.handle("codes:make", async (_e, rank, count) => {   // every Dev may make one-time codes; the service keeps only their hashes
+  const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
+  const r = await fetch(packs.base() + "/v1/codes", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(15000), body: JSON.stringify({ code, rank, count: Math.max(1, Math.min(20, count | 0)) }) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return j.codes;
+});
 ipcMain.handle("roles:get", async () => (await fetch(packs.base() + "/v1/roles", { signal: AbortSignal.timeout(10000) })).json());
 ipcMain.handle("roles:set", async (e, name, rank) => {
   const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
