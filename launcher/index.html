@@ -222,6 +222,8 @@ main{flex:1;overflow:auto;padding:22px 26px}
    <div class="tiles" id="nfx"></div>
    <div style="margin:14px 0;min-height:30px"><span class="badge" id="bprev2" style="width:22px;height:22px"></span> <span class="fx" id="nprev">Dein Name</span></div><button class="btn p" id="nsave">Name speichern</button></div>
  </div>
+ <div class="card" id="ccard" style="margin-top:16px;max-width:560px"><h3>Chat-Farbe</h3><p class="mut" style="margin-top:0">Die Farbe deiner Chat-Nachrichten, für alle sichtbar. Eine einfache Farbe ohne Animation. Welche Farben es gibt, hängt vom Rang ab. Im Spiel lässt sich die Anzeige unter Module, Chat ausschalten.</p>
+  <div id="cswatch" class="row" style="gap:8px;flex-wrap:wrap"></div><div style="margin-top:12px;font-size:15px" id="cprev"></div></div>
 </section>
 
 <section class="page" id="skins"><h2>Skins</h2><p class="sub">Dein Skin und deine Umhänge, wie im Minecraft-Launcher. Änderungen gelten sofort in allen Minecraft-Versionen.</p>
@@ -850,6 +852,13 @@ const EFFECTS = ["solid", "gradient", "rainbow", "pulse", "glow", "shimmer", "wa
 const FONTMAP = { default: "inherit", poppins: "LacPoppins", righteous: "LacRighteous", audiowide: "LacAudiowide", pressstart: "LacPress" };
 const fxAllowed = () => !!(me && (me.plus || me.dev));   // Pro: colours only, animations from LAC+
 function lockStyle() { const lock = !fancy(); $$("#nfx,#bfx").forEach((e) => e.classList.toggle("lock", fancy() && !fxAllowed())); ["#bcard .row", "#ncard .row"].forEach((s) => $$(s).forEach((r) => r.classList.toggle("lock", lock))); $("#tsave").disabled = lock; $("#nsave").disabled = lock; }
+async function renderChatColor() {
+  if (!me) return; const pal = await lac.chatPalette(), cur = me.chatColor || "";
+  $("#cswatch").innerHTML = ['', ...pal].map((h) => `<button class="csw${h === cur ? " on" : ""}" data-c="${h}" title="${h || "keine"}" style="width:30px;height:30px;border-radius:8px;border:2px solid ${h === cur ? "#fff" : "rgba(255,255,255,.15)"};background:${h || "transparent"};color:#9aa0b8;cursor:pointer">${h ? "" : "–"}</button>`).join("");
+  $("#cprev").innerHTML = `<span style="color:${cur || "#fff"}">${esc($("#uname").textContent || "Du")}: Hallo zusammen!</span>`;
+  $$("#cswatch .csw").forEach((b) => b.onclick = guard(async () => { me = await lac.setChatColor(b.dataset.c); toast("Chat-Farbe gespeichert", true); renderChatColor(); }));
+}
+document.querySelector('nav button[data-p="style"]').addEventListener("click", () => renderChatColor().catch(() => {}));
 $("#tsave").onclick = guard(async () => { me = await lac.setTag($("#c1").value, $("#c2").value, bsel); toast("Badge gespeichert", true); await loadMe(); });
 $("#nsave").onclick = guard(async () => { me = await lac.setName($("#n1").value, $("#n2").value, nsel, "default"); toast("Name gespeichert", true); await loadMe(); });
 $("#syncsave").onclick = guard(async () => { const u = await lac.setSync($("#syncurl").value); toast(u ? "Gespeichert. Gilt ab dem nächsten Spielstart." : "Sync ausgeschaltet", true); });

@@ -3,7 +3,7 @@ const call = (ch) => (...a) => ipcRenderer.invoke(ch, ...a);
 contextBridge.exposeInMainWorld("lac", {
   winMin: call("win:min"), winMax: call("win:max"), winClose: call("win:close"), user: call("user"), login: call("login"), loginDevice: call("login:device"), loginCancel: call("login:cancel"), onLoginCode: (f) => ipcRenderer.on("login:code", (_e, c) => f(c)), logout: call("logout"),
   catalog: call("store:catalog"), me: call("store:me"), redeem: call("store:redeem"), cancel: call("store:cancel"), cancelPro: call("store:cancelpro"), toFree: call("store:tofree"),
-  buy: call("store:buy"), equip: call("store:equip"), unequip: call("store:unequip"), setTag: call("store:tag"), setName: call("store:name"), setHalo: call("store:halo"), setUiFont: call("store:uifont"), setAdjust: call("store:adjust"),
+  buy: call("store:buy"), equip: call("store:equip"), unequip: call("store:unequip"), setTag: call("store:tag"), chatPalette: call("store:chatpal"), setChatColor: call("store:chatcolor"), setName: call("store:name"), setHalo: call("store:halo"), setUiFont: call("store:uifont"), setAdjust: call("store:adjust"),
   versions: call("versions"), profiles: call("profiles"), saveProfile: call("profile:save"), deleteProfile: call("profile:delete"),
   searchMods: call("mods:search"), addMod: call("mods:add"), removeMod: call("mods:remove"),
   sysRam: call("sys:ram"), shareCode: call("share:code"), importCode: call("share:import-code"), shareZip: call("share:zip"), importZip: call("share:import-zip"),
