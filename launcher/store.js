@@ -49,13 +49,14 @@ const BADGE_FX = ["shaking", "waving", "flipping", "gradient", "rainbow", "metal
 const EXCL = [["gradient", "rainbow", "metallic", "chromatic", "fire", "aurora"], ["shaking", "waving", "flipping", "iterating"], ["skewing", "growing"], ["fade", "blinking", "glowing", "breathe"], ["glowing", "outline", "neon"]];
 const validFx = (fx, allowed) => Array.isArray(fx) && fx.length <= 5 && new Set(fx).size === fx.length && fx.every((e) => allowed.includes(e)) && !fx.some((a, i) => fx.some((b, j) => j > i && EXCL.some((g) => g.includes(a) && g.includes(b))));
 const blank = () => ({ pro: false, advances: [], xp: 0, haloFollow: true, coins: 0, plus: false, owned: [], equipped: [], chroma: {}, tag: { color: "#7c5cff", color2: "#00d4ff", effect: "gradient" }, name: { color: "#ffffff", color2: "#7c5cff", effect: "solid", font: "default" }, uiFont: "poppins", adjust: {}, ticksPlayed: 0 });
-const styled = (d) => d.plus || d.pro || d.dev;
+const P = (d) => d.plus || d.creator;   // a Creator has everything LAC+ gives
+const styled = (d) => P(d) || d.pro || d.dev;
 const isRed = (hex) => { const m = /^#([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return false; const c = parseInt(m[1], 16), r = (c >> 16 & 255) / 255, g = (c >> 8 & 255) / 255, b = (c & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), dl = mx - mn; if (mx < 0.35 || mx === 0 || dl / mx < 0.5) return false; let h = mx === r ? ((g - b) / dl) * 60 : mx === g ? (2 + (b - r) / dl) * 60 : (4 + (r - g) / dl) * 60; h = ((h % 360) + 360) % 360; return h <= 20 || h >= 340; };
 /** Free: nothing; Pro: colours, no animations; Plus: everything but red colours; Dev: everything */
-const styleCheck = (d, c1, c2, effects) => { if (d.dev) return null; if (effects.includes("fire")) return "Feuer gibt es nur mit Dev-Rang"; if (effects.length && !d.plus) return "Animationen gibt es ab LAC+"; if (isRed(c1) || isRed(c2)) return "Rote Farben gibt es nur mit Dev-Rang"; return null; };
-const rankOk = (d, id) => { const r = item(id) && item(id).rank; return !r || d.dev || (r === "pro" ? d.pro || d.plus : r === "plus" && d.plus); };
+const styleCheck = (d, c1, c2, effects) => { if (d.dev) return null; if (effects.includes("fire")) return "Feuer gibt es nur mit Dev-Rang"; if (effects.length && !P(d)) return "Animationen gibt es ab LAC+"; if (isRed(c1) || isRed(c2)) return "Rote Farben gibt es nur mit Dev-Rang"; return null; };
+const rankOk = (d, id) => { const r = item(id) && item(id).rank; return !r || d.dev || (r === "pro" ? d.pro || P(d) : r === "plus" && P(d)); };
 const inBundle = (id) => (catalog().bundles || []).some((b) => b.items.includes(id));   // bundle items need their achievement, LAC+ included
-const ownsBase = (d, id) => (item(id) && item(id).plus ? !!(d.plus || d.dev) : false) || (!(item(id) && item(id).plus) && (d.dev || d.owned.includes(id) || (d.plus && !inBundle(id)))) || (catalog().bundles || []).some((b) => b.items.includes(id) && (d.advances || []).includes(b.adv));
+const ownsBase = (d, id) => (item(id) && item(id).plus ? !!(P(d) || d.dev) : false) || (!(item(id) && item(id).plus) && (d.dev || d.owned.includes(id) || (P(d) && !inBundle(id)))) || (catalog().bundles || []).some((b) => b.items.includes(id) && (d.advances || []).includes(b.adv));
 const owns = (d, id) => { const it = item(id); return it && it.rank ? rankOk(d, id) : ownsBase(d, id); };
 const item = (id) => catalog().items.find((i) => i.id === id);
 
@@ -73,9 +74,9 @@ module.exports = {
   /** this PC's secret for the sync service; the game keeps it in the same store, so launcher and game are the same device */
   syncKey(uuid) { edit(uuid, (d) => { if (!d.syncKey || d.syncKey.length < 32) d.syncKey = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, ""); }); return read().users[uuid].syncKey; },
   devCode(uuid) { const d = read().users[uuid]; return d && d.dev ? d.devCode || "" : ""; },
-  me(uuid) { const f = read(); return Object.assign(blank(), f.users[uuid] || {}); },
+  me(uuid) { const f = read(), m = Object.assign(blank(), f.users[uuid] || {}); m.creator = !!m.creator; m.plus = !!(m.plus || m.creator); return m; },   // for the screens a Creator counts as LAC+
   /** a rank the sync service confirmed for a one-time code (it keeps the rank for good, there is no code to show again) */
-  grantRank(uuid, rank) { return edit(uuid, (d) => { if (rank === "pro") d.pro = true; else if (rank === "plus") d.plus = true; }); },
+  grantRank(uuid, rank) { return edit(uuid, (d) => { if (rank === "pro") d.pro = true; else if (rank === "plus") d.plus = true; else if (rank === "creator") d.creator = true; }); },
   redeem(uuid, code) {
     const h = crypto.createHash("sha256").update("lac-code:" + code).digest("hex");
     if (h === DEV_HASH) return edit(uuid, (d) => { if (d.dev) return "Dev-Rang ist schon aktiv"; d.dev = true; d.devCode = String(code); });
@@ -83,10 +84,10 @@ module.exports = {
     if (h !== CODE_HASH) return "Ungültiger Code";
     return edit(uuid, (d) => { if (d.plus) return "LAC+ ist schon aktiv"; d.plus = true; });
   },
-  cancel(uuid) { return edit(uuid, (d) => { d.plus = false; if (!d.pro) { d.tag = blank().tag; d.name = blank().name; } d.equipped = d.equipped.filter((e) => owns(d, e)); }); },
+  cancel(uuid) { return edit(uuid, (d) => { d.plus = false; if (!d.pro && !d.creator) { d.tag = blank().tag; d.name = blank().name; } d.equipped = d.equipped.filter((e) => owns(d, e)); }); },
   /** the single downgrade, same as in the game: every paid rank ends */
-  toFree(uuid) { return edit(uuid, (d) => { d.plus = false; d.pro = false; d.dev = false; d.devCode = ""; d.tag = blank().tag; d.name = blank().name; d.equipped = d.equipped.filter((e) => owns(d, e)); }); },
-  cancelPro(uuid) { return edit(uuid, (d) => { d.pro = false; if (!d.plus) { d.tag = blank().tag; d.name = blank().name; } }); },
+  toFree(uuid) { return edit(uuid, (d) => { d.plus = false; d.creator = false; d.pro = false; d.dev = false; d.devCode = ""; d.tag = blank().tag; d.name = blank().name; d.equipped = d.equipped.filter((e) => owns(d, e)); }); },
+  cancelPro(uuid) { return edit(uuid, (d) => { d.pro = false; if (!P(d)) { d.tag = blank().tag; d.name = blank().name; } }); },
   buy(uuid, id) {
     const it = item(id);
     return edit(uuid, (d) => {
