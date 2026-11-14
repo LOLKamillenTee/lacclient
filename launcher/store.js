@@ -48,8 +48,8 @@ const NAME_FX = ["shaking", "waving", "iterating", "flipping", "skewing", "growi
 const BADGE_FX = ["shaking", "waving", "flipping", "gradient", "rainbow", "metallic", "fade", "shimmer", "blinking", "chromatic", "fire", "glowing", "aurora", "sweep", "breathe", "neon"];
 const EXCL = [["gradient", "rainbow", "metallic", "chromatic", "fire", "aurora"], ["shaking", "waving", "flipping", "iterating"], ["skewing", "growing"], ["fade", "blinking", "glowing", "breathe"], ["glowing", "outline", "neon"]];
 const validFx = (fx, allowed) => Array.isArray(fx) && fx.length <= 5 && new Set(fx).size === fx.length && fx.every((e) => allowed.includes(e)) && !fx.some((a, i) => fx.some((b, j) => j > i && EXCL.some((g) => g.includes(a) && g.includes(b))));
-const blank = () => ({ chatColor: "", pro: false, advances: [], xp: 0, haloFollow: true, coins: 0, plus: false, owned: [], equipped: [], chroma: {}, tag: { color: "#7c5cff", color2: "#00d4ff", effect: "gradient" }, name: { color: "#ffffff", color2: "#7c5cff", effect: "solid", font: "default" }, uiFont: "poppins", adjust: {}, ticksPlayed: 0 });
-const P = (d) => d.plus || d.creator;   // a Creator has everything LAC+ gives
+const blank = () => ({ giftUntil: 0, giftedTo: [], giftUsed: [], chatColor: "", pro: false, advances: [], xp: 0, haloFollow: true, coins: 0, plus: false, owned: [], equipped: [], chroma: {}, tag: { color: "#7c5cff", color2: "#00d4ff", effect: "gradient" }, name: { color: "#ffffff", color2: "#7c5cff", effect: "solid", font: "default" }, uiFont: "poppins", adjust: {}, ticksPlayed: 0 });
+const P = (d) => d.plus || d.creator || (d.giftUntil || 0) > Date.now();   // a Creator has everything LAC+ gives
 const styled = (d) => P(d) || d.pro || d.dev;
 const isRed = (hex) => { const m = /^#([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return false; const c = parseInt(m[1], 16), r = (c >> 16 & 255) / 255, g = (c >> 8 & 255) / 255, b = (c & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), dl = mx - mn; if (mx < 0.35 || mx === 0 || dl / mx < 0.5) return false; let h = mx === r ? ((g - b) / dl) * 60 : mx === g ? (2 + (b - r) / dl) * 60 : (4 + (r - g) / dl) * 60; h = ((h % 360) + 360) % 360; return h <= 20 || h >= 340; };
 /** Free: nothing; Pro: colours, no animations; Plus: everything but red colours; Dev: everything */
@@ -74,7 +74,7 @@ module.exports = {
   /** this PC's secret for the sync service; the game keeps it in the same store, so launcher and game are the same device */
   syncKey(uuid) { edit(uuid, (d) => { if (!d.syncKey || d.syncKey.length < 32) d.syncKey = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, ""); }); return read().users[uuid].syncKey; },
   devCode(uuid) { const d = read().users[uuid]; return d && d.dev ? d.devCode || "" : ""; },
-  me(uuid) { const f = read(), m = Object.assign(blank(), f.users[uuid] || {}); m.creator = !!m.creator; m.plus = !!(m.plus || m.creator); return m; },   // for the screens a Creator counts as LAC+
+  me(uuid) { const f = read(), m = Object.assign(blank(), f.users[uuid] || {}); m.creator = !!m.creator; m.plus = !!(m.plus || m.creator || (m.giftUntil || 0) > Date.now()); return m; },   // for the screens a Creator counts as LAC+
   /** the chat colours a rank may use (the sync service checks it again): Free and Pro a short list, Plus and Creator a long one without red, Dev also the reds */
   chatPalette(uuid) {
     const d = this.me(uuid), l = ["#ffffff", "#aaaaaa", "#55ffff", "#55ff55"], paid = d.dev || d.plus || d.pro;   // me(): a Creator counts as plus
@@ -86,7 +86,16 @@ module.exports = {
   setChatColor(uuid, hex) { const pal = this.chatPalette(uuid); return edit(uuid, (d) => { if (hex && !pal.includes(hex)) return "Diese Farbe gibt es mit deinem Rang nicht"; d.chatColor = hex || ""; }); },
   /** a rank the sync service confirmed for a one-time code (it keeps the rank for good, there is no code to show again) */
   grantRank(uuid, rank) { return edit(uuid, (d) => { if (rank === "pro") d.pro = true; else if (rank === "plus") d.plus = true; else if (rank === "creator") d.creator = true; }); },
+  /** a gift code from a Creator (see the game's LacStore.giftCode): 7 days of LAC+, kept only in this file */
+  redeemGift(uuid, code) {
+    const plain = (u) => String(u || "").replace(/-/g, "").toLowerCase();
+    let p; try { p = Buffer.from(String(code).trim().slice(5), "base64url").toString("utf8").split("|"); } catch { return "Ungültiges Geschenk"; }
+    if (p.length !== 3 || p[1] !== plain(uuid)) return "Dieses Geschenk ist für jemand anderen";
+    if (p[0] === p[1]) return "Ungültiges Geschenk";
+    return edit(uuid, (d) => { d.giftUsed ||= []; if (d.giftUsed.includes(p[2])) return "Dieses Geschenk wurde schon eingelöst"; d.giftUsed.push(p[2]); d.giftUntil = Math.max(d.giftUntil || 0, Date.now()) + 7 * 24 * 3600 * 1000; });
+  },
   redeem(uuid, code) {
+    if (/^GIFT-/i.test(String(code).trim())) return this.redeemGift(uuid, "GIFT-" + String(code).trim().slice(5));
     const h = crypto.createHash("sha256").update("lac-code:" + code).digest("hex");
     if (h === DEV_HASH) return edit(uuid, (d) => { if (d.dev) return "Dev-Rang ist schon aktiv"; d.dev = true; d.devCode = String(code); });
     if (h === PRO_HASH) return edit(uuid, (d) => { if (d.pro) return "LAC Pro ist schon aktiv"; d.pro = true; });
