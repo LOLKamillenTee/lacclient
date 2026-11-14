@@ -248,19 +248,23 @@ const myStatus = () => { const s = readSettings().friendStatus; return s === "af
  * Signed in on a new PC: the account proves itself with the chat key pair Mojang certifies for it (the token goes to Mojang only), and the sync service
  * moves the account's claim to this PC's key. Without this a new PC would be locked out of its own friends and cosmetics.
  */
-let lastTakeover = 0;
+let lastTakeover = 0, takeoverWhy = "";   // takeoverWhy: why the last attempt failed (shown to the user, so a failure is never a silent "key does not match")
 async function takeover(u) {
-  if (!session || Date.now() - lastTakeover < 60000) return false; lastTakeover = Date.now();
+  if (!session) { takeoverWhy = "nicht mit Microsoft angemeldet"; return false; }
+  if (Date.now() - lastTakeover < 60000) return false; lastTakeover = Date.now(); takeoverWhy = "";
   try {
-    const cr = await (await fetch("https://api.minecraftservices.com/player/certificates", { method: "POST", headers: { authorization: "Bearer " + (await mcToken()) }, signal: AbortSignal.timeout(15000) })).json();
+    const cres = await fetch("https://api.minecraftservices.com/player/certificates", { method: "POST", headers: { authorization: "Bearer " + (await mcToken()) }, signal: AbortSignal.timeout(15000) });
+    if (!cres.ok) { takeoverWhy = "Mojang-Zertifikat: HTTP " + cres.status; return false; }
+    const cr = await cres.json();
     const pem = (s) => s.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
     const nonce = (await (await fetch(packs.base() + "/v1/nonce", { signal: AbortSignal.timeout(10000) })).json()).nonce;
     const sign = require("crypto").createSign("RSA-SHA256"); sign.update(nonce);
     const nsig = sign.sign(require("crypto").createPrivateKey({ key: Buffer.from(pem(cr.keyPair.privateKey), "base64"), format: "der", type: "pkcs8" })).toString("base64");
     const r = await fetch(packs.base() + "/v1/takeover", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(15000),
       body: JSON.stringify({ uuid: u.uuid.replace(/-/g, ""), key: store.syncKey(u.uuid), nonce, expiresAt: Date.parse(cr.expiresAt), pub: pem(cr.keyPair.publicKey), sig: cr.publicKeySignatureV2, nsig }) });
+    if (!r.ok) takeoverWhy = "Server: " + ((await r.json().catch(() => ({}))).error || "HTTP " + r.status);
     return r.ok;
-  } catch { return false; }
+  } catch (e) { takeoverWhy = String((e && e.message) || e); return false; }
 }
 async function friendsCall(ops, presence, again) {
   const u = user(); if (!u) throw new Error("Bitte einmal mit Microsoft anmelden");
@@ -268,7 +272,7 @@ async function friendsCall(ops, presence, again) {
     body: JSON.stringify({ uuid: u.uuid.replace(/-/g, ""), name: u.name, key: store.syncKey(u.uuid), ops, ...(presence ? { presence } : {}) }) });
   const j = await r.json().catch(() => ({}));
   if (r.status === 403 && !again && /Gerät|Schlüssel passt/.test(j.error || "") && (await takeover(u))) return friendsCall(ops, presence, true);   // another PC held the claim
-  if (!r.ok) throw new Error(j.error || "Server meldet " + r.status);
+  if (!r.ok) throw new Error((j.error || "Server meldet " + r.status) + (r.status === 403 && takeoverWhy ? ` (Übernahme dieses Geräts fehlgeschlagen: ${takeoverWhy})` : ""));
   return j;
 }
 const beat = () => (current ? friendsCall([]) : friendsCall([], { status: myStatus(), server: "Im Launcher", addr: "" }));
