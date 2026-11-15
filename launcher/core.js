@@ -678,16 +678,28 @@ function linkShared(gameDir, tag = "") {
     fs.symlinkSync(target, link, process.platform === "win32" ? "junction" : "dir");
   }
 }
+/** how many servers a servers.dat holds (-1 when it cannot be read): an empty list must never replace a full one */
+function serverCount(file) {
+  try { const root = nbtRead(fs.readFileSync(file)), e = root.v.get("servers"); return e && e.t === 9 ? e.v.items.length : 0; } catch { return -1; }
+}
+/** copy that keeps the time of the source, so "which one is newer" stays true */
+function copyKeep(from, to) { fs.mkdirSync(path.dirname(to), { recursive: true }); fs.copyFileSync(from, to); try { const st = fs.statSync(from); fs.utimesSync(to, st.atime, st.mtime); } catch { /* time stays */ } }
 /** @param changedOnly (running game) only a file that is newer than the common copy goes out: every change of the settings reaches the other profiles within seconds */
 function syncSharedFiles(gameDir, direction, changedOnly) {
   fs.mkdirSync(SHARED(), { recursive: true });
   for (const f of SHARED_FILES) {
     const common = path.join(SHARED(), f), mine = path.join(gameDir, f);
     try {
-      if (direction === "in") {   // the common copy wins; the first profile to have one seeds it
-        if (fs.existsSync(common)) { fs.mkdirSync(path.dirname(mine), { recursive: true }); fs.copyFileSync(common, mine); }
-        else if (fs.existsSync(mine)) { fs.mkdirSync(path.dirname(common), { recursive: true }); fs.copyFileSync(mine, common); }
-      } else if (fs.existsSync(mine)) { if (changedOnly && fs.existsSync(common) && fs.statSync(mine).mtimeMs <= fs.statSync(common).mtimeMs) continue; fs.mkdirSync(path.dirname(common), { recursive: true }); fs.copyFileSync(mine, common); }
+      const hasC = fs.existsSync(common), hasM = fs.existsSync(mine);
+      const emptyVsFull = (a, b) => f === "servers.dat" && serverCount(a) === 0 && serverCount(b) > 0;   // a list without servers does not replace one with servers
+      if (direction === "in") {   // the newer copy wins (a profile that was not started for a while does not undo what you set in another one); the first profile to have one seeds it
+        if (hasC && hasM) { const cm = fs.statSync(common).mtimeMs, mm = fs.statSync(mine).mtimeMs; if (mm > cm + 1000 && !emptyVsFull(mine, common)) copyKeep(mine, common); else if (!emptyVsFull(common, mine) || true) { if (!emptyVsFull(common, mine)) copyKeep(common, mine); } }
+        else if (hasC) copyKeep(common, mine); else if (hasM) copyKeep(mine, common);
+      } else if (hasM) {
+        if (changedOnly && hasC && fs.statSync(mine).mtimeMs <= fs.statSync(common).mtimeMs) continue;
+        if (hasC && emptyVsFull(mine, common)) continue;
+        copyKeep(mine, common);
+      }
     } catch { /* a locked file: the next start tries again */ }
   }
 }
