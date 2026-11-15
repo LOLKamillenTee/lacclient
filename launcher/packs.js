@@ -28,6 +28,9 @@ async function packData(idOrCode) {
   catch (e) { try { const hit = ((await rawJson("index.json")).packs || []).find((p) => p.id === key || String(p.code).toUpperCase() === key.toUpperCase()); if (!hit) throw e; return await rawJson(hit.id + ".json"); } catch { throw e; } }
 }
 
+/** the role list (ranks Devs gave): from the GitHub copy, the service only when that is not there */
+async function roles() { try { return await rawJson("roles.json"); } catch { return getJson(base() + "/v1/roles"); } }
+
 const iconFile = (id) => path.join(ICONS(), id + ".png");
 
 /** the profile picture as a PNG buffer (resized by the caller), stored for the profile */
@@ -113,4 +116,4 @@ function startBridge(exePath, handler) {
   }, 1500);
 }
 
-module.exports = { updates, update, base, list, install, publish, remove, setIcon, iconFile, startBridge, base };
+module.exports = { roles, updates, update, base, list, install, publish, remove, setIcon, iconFile, startBridge, base };

@@ -293,7 +293,7 @@ async function friendsCall(ops, presence, again) {
 const beat = () => (current ? friendsCall([]) : friendsCall([], { status: myStatus(), server: "Im Launcher", addr: "" }));
 ipcMain.handle("friends:get", async () => { const j = await beat(); return { code: j.code, friends: j.friends, status: myStatus() }; });
 ipcMain.handle("friends:status", async (e, s) => { writeSettings({ ...readSettings(), friendStatus: ["online", "afk", "offline"].includes(s) ? s : "online" }); await beat(); return myStatus(); });
-setInterval(() => { if (session) beat().catch(() => {}); }, 20000);   // friends see you while the launcher is open
+setInterval(() => { if (session) beat().catch(() => {}); }, 60000);   // friends see you while the launcher is open
 ipcMain.handle("friends:add", async (e, code) => { const j = await friendsCall([{ op: "add", code: String(code) }]); const res = (j.results || [])[0] || {}; if (res.error) throw new Error(res.error); return { name: res.name || "" }; });
 
 /* ---------- profile overview: everything inside one profile (mods, resource packs, shaders) with pictures ---------- */
@@ -394,13 +394,13 @@ async function ensureMainProfile() {
 let rolesFirst = true;
 async function pollRoles() {
   try {
-    const roles = await (await fetch(packs.base() + "/v1/roles", { signal: AbortSignal.timeout(8000) })).json(), u = user();
+    const roles = await packs.roles(), u = user();
     const before = u ? store.grantedOf(u.uuid) : ""; store.setGranted(roles);
     if (u && store.grantedOf(u.uuid) !== before) tellWindow({ type: "rank", quiet: rolesFirst });
     rolesFirst = false;
   } catch { /* offline: next round */ }
 }
-setInterval(pollRoles, 5000); setTimeout(pollRoles, 3000);
+setInterval(pollRoles, 10 * 60_000); setTimeout(pollRoles, 3000);   // every 10 minutes, from the GitHub copy: the sync service has a daily limit
 ipcMain.handle("mc:lang", () => {   // "de" or "en" from the language Minecraft is set to, "" while there is no options.txt yet
   const files = [path.join(core.SHARED(), "options.txt"), ...core.readProfiles().map((p) => path.join(core.ROOT, "instances", p.id, "options.txt"))];
   for (const f of files) { try { const m = /^lang:(\S+)/m.exec(fs.readFileSync(f, "utf8")); if (m) return /^de/i.test(m[1]) ? "de" : "en"; } catch { /* next */ } }

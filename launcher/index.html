@@ -953,7 +953,7 @@ $$("nav button").forEach((b) => b.addEventListener("click", () => requestAnimati
 window.addEventListener("resize", moveInd); setTimeout(moveInd, 60); setTimeout(moveInd, 600);
 
 let heroShots = [], heroShotsAt = 0, heroPic = "";
-async function loadHeroShots() { if (Date.now() - heroShotsAt < 120000) return; heroShotsAt = Date.now(); try { heroShots = await lac.shots(); } catch { heroShots = []; } heroExtra(); }
+async function loadHeroShots() { if (Date.now() - heroShotsAt < 590000) return; heroShotsAt = Date.now(); try { heroShots = await lac.shots(); } catch { heroShots = []; } heroExtra(); }
 function setHeroPic(p) {
   const el = $("#hpic"); if (!el) return;
   const s = p && heroShots.find((x) => (x.file || "").replace(/\\/g, "/").includes("/instances/" + p.id + "/")) || heroShots[0];
@@ -986,7 +986,7 @@ async function frChip() {
   try { const u = await lac.user(); if (!u.online) throw 0; const r = await lac.friends(); const n = (r.friends || []).filter((f) => f.status && f.status !== "offline").length; $("#tfrn").textContent = n; $("#tfr").classList.add("on"); }
   catch { $("#tfr").classList.remove("on"); }
 }
-setTimeout(frChip, 5000); setInterval(frChip, 45000); setTimeout(loadHeroShots, 1500); setInterval(loadHeroShots, 130000);
+setTimeout(frChip, 5000); setInterval(frChip, 150000); setTimeout(loadHeroShots, 1500); setInterval(loadHeroShots, 600000);
 
 /* the skin on the start page: a real 3D model, turned by hand only */
 let heroView = null, heroSkinFor = "";
