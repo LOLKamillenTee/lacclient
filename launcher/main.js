@@ -548,7 +548,13 @@ app.whenReady().then(async () => {
       .then((got) => { if (got) tellWindow({ type: "update", line: "Java ist installiert, alles bereit" }); })
       .catch((e) => tellWindow({ type: "update", line: "Java konnte nicht installiert werden: " + e.message }))
       .then(() => core.ensureFabric("26.3")).catch(() => { /* offline: it is fetched when the game starts */ })
-      .then(() => ensureMainProfile()).catch((e) => console.error("[lac] main profile:", e && e.message));
+      .then(() => ensureMainProfile()).catch((e) => console.error("[lac] main profile:", e && e.message))
+      .then(async () => {   // every start: the LAC modpacks the player has are brought to their newest version (from the sync service, else from the GitHub copy)
+        for (const u of await packs.updates().catch(() => [])) {
+          if (current) break;
+          try { await packs.update(u.profile, () => {}); tellWindow({ type: "update", line: `Modpack ${u.name} aktualisiert (Version ${u.latest})` }); } catch (e) { tellWindow({ type: "update", line: `Modpack ${u.name}: Update fehlgeschlagen (${e.message})` }); }
+        }
+      }).catch(() => {});
   });
   if (process.env.LAC_UISHOT) require("./devshot")(w, process.env.LAC_UISHOT);   // dev tool, off unless the variable is set
 });

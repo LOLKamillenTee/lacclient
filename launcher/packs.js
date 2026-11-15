@@ -12,6 +12,22 @@ const REQ = () => path.join(core.ROOT, "requests");
 const base = () => { try { const u = fs.readFileSync(path.join(core.ROOT, "sync.url"), "utf8").trim(); if (/^https:\/\//.test(u)) return u.replace(/\/+$/, ""); } catch { /* default */ } return DEFAULT_BASE; };
 const getJson = async (url, opts) => { const r = await fetch(url, { signal: AbortSignal.timeout(20000), ...opts }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || `Server meldet ${r.status}`); return j; };
 
+/* The registry is mirrored into the GitHub repository (packs/, kept current by .github/workflows/sync-packs.yml): when the sync service is down or its daily limit is used up, the launcher reads the packs from there. */
+const RAW = () => `https://raw.githubusercontent.com/${JSON.parse(fs.readFileSync(path.join(__dirname, "update.json"), "utf8")).repo}/main/packs`;
+const rawJson = async (f) => { const r = await fetch(`${RAW()}/${f}?t=${Math.floor(Date.now() / 60000)}`, { signal: AbortSignal.timeout(20000) }); if (!r.ok) throw new Error(`GitHub meldet ${r.status}`); return r.json(); };
+let via = "server";
+/** the registry's packs: from the sync service, else from GitHub */
+async function index() {
+  try { const l = (await getJson(base() + "/v1/packs")).packs || []; via = "server"; return l; }
+  catch (e) { try { const l = (await rawJson("index.json")).packs || []; via = "github"; return l; } catch { throw e; } }
+}
+/** one pack with its share code, by id or pack code */
+async function packData(idOrCode) {
+  const key = String(idOrCode).trim();
+  try { return await getJson(base() + "/v1/packs/" + encodeURIComponent(key)); }
+  catch (e) { try { const hit = ((await rawJson("index.json")).packs || []).find((p) => p.id === key || String(p.code).toUpperCase() === key.toUpperCase()); if (!hit) throw e; return await rawJson(hit.id + ".json"); } catch { throw e; } }
+}
+
 const iconFile = (id) => path.join(ICONS(), id + ".png");
 
 /** the profile picture as a PNG buffer (resized by the caller), stored for the profile */
@@ -21,15 +37,15 @@ function setIcon(profileId, png) {
   return core.readProfiles();
 }
 
-async function list() { return ((await getJson(base() + "/v1/packs")).packs || []).map((p) => ({ ...p, iconUrl: p.icon ? `${base()}/v1/packs/${p.id}/icon` : "" })); }
+async function list() { const l = await index(); return l.map((p) => ({ ...p, iconUrl: p.icon ? (via === "github" ? `${RAW()}/${p.id}.png` : `${base()}/v1/packs/${p.id}/icon`) : "" })); }
 
 /** installs a registry pack (by id or pack code) as a new profile, with its creator and picture */
 async function install(idOrCode, send = () => {}) {
-  const p = await getJson(base() + "/v1/packs/" + encodeURIComponent(String(idOrCode).trim()));
+  const p = await packData(idOrCode);
   const profiles = await share.importCode(p.share, send), prof = profiles[profiles.length - 1];
   prof.creator = p.creator; prof.fromPack = p.id; prof.name = p.name; prof.desc = p.desc; prof.packVer = p.ver || 1;
   prof.packModIds = (share.decode(p.share).profile.mods || []).filter((m) => !m.dep && m.id).map((m) => String(m.id));   // what the pack had: an update removes only these
-  if (p.hasIcon) { try { const r = await fetch(base() + `/v1/packs/${p.id}/icon`, { signal: AbortSignal.timeout(20000) }); if (r.ok) { fs.mkdirSync(ICONS(), { recursive: true }); fs.writeFileSync(iconFile(prof.id), Buffer.from(await r.arrayBuffer())); prof.icon = prof.id + ".png?" + Date.now(); } } catch { /* no picture is fine */ } }
+  if (p.hasIcon) { try { let r = await fetch(base() + `/v1/packs/${p.id}/icon`, { signal: AbortSignal.timeout(20000) }).catch(() => null); if (!r || !r.ok) r = await fetch(`${RAW()}/${p.id}.png`, { signal: AbortSignal.timeout(20000) }); if (r.ok) { fs.mkdirSync(ICONS(), { recursive: true }); fs.writeFileSync(iconFile(prof.id), Buffer.from(await r.arrayBuffer())); prof.icon = prof.id + ".png?" + Date.now(); } } catch { /* no picture is fine */ } }
   core.writeProfiles(profiles);
   return { profiles, profile: prof };
 }
@@ -49,7 +65,7 @@ async function updates() {
 async function update(profileId, send = () => {}) {
   const all = core.readProfiles(), prof = all.find((x) => x.id === profileId);
   if (!prof || !prof.fromPack) throw new Error("Dieses Profil ist kein LAC Modpack");
-  const p = await getJson(base() + "/v1/packs/" + encodeURIComponent(prof.fromPack));
+  const p = await packData(prof.fromPack);
   const data = share.decode(p.share);
   const ids = await share.applyUpdate(profileId, data, prof.packModIds, send);
   const again = core.readProfiles(), q = again.find((x) => x.id === profileId);

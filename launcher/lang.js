@@ -163,6 +163,7 @@
     "Modpack-Update verfügbar": "Modpack update available",
     "Modpack wird aktualisiert, Einstellungen und Pakete bleiben…": "Updating the modpack, settings and packs are kept…",
     "Modpack aktualisiert auf Version": "Modpack updated to version",
+    "Update fehlgeschlagen": "Update failed", "Modpack-Update verfügbar:": "Modpack update available:",
     "Modpack wird installiert, das dauert etwas…": "Installing the modpack, this takes a moment…",
     "Update wird geladen": "Loading update",
     "LAC Launcher": "LAC Launcher",
