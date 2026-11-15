@@ -7,7 +7,8 @@ const get = async (u, bin) => { const r = await fetch(BASE + u, { signal: AbortS
 (async () => {
   let index; try { index = (await get("/v1/packs")).packs; if (!Array.isArray(index)) throw new Error("no list"); } catch (e) { console.log("service not reachable, mirror unchanged:", e.message); return; }
   fs.mkdirSync(OUT, { recursive: true });
-  const keep = new Set(["index.json"]);
+  const keep = new Set(["index.json", "roles.json", "defaults.json"]);
+  for (const [file, url] of [["roles.json", "/v1/roles"], ["defaults.json", "/v1/defaults"]]) { try { fs.writeFileSync(path.join(OUT, file), JSON.stringify(await get(url))); } catch (e) { console.log(file, "not updated:", e.message); } }   // the game reads these from here, not from the service
   for (const p of index) {
     const f = path.join(OUT, p.id + ".json"); keep.add(p.id + ".json");
     let have = null; try { have = JSON.parse(fs.readFileSync(f, "utf8")); } catch { /* new */ }
