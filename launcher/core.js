@@ -572,6 +572,69 @@ function startWindow(profile) {
   return profile.width && profile.height ? { width: +profile.width, height: +profile.height } : undefined;
 }
 
+/* ------------------------------ servers of a modpack ------------------------------ */
+// A Dev can save servers in a modpack (profile.servers = [{name, ip}], they travel inside the modpack's share code): everybody who has the modpack gets them in the server list of THIS profile.
+// servers.dat is shared by all profiles, so they are added to the profile's copy at the start and taken out of the copy that goes back to the shared list.
+const nbtRead = (buf) => {
+  let o = 0; const u8 = () => buf[o++], i16 = () => { const v = buf.readInt16BE(o); o += 2; return v; }, i32 = () => { const v = buf.readInt32BE(o); o += 4; return v; };
+  const str = () => { const n = buf.readUInt16BE(o); o += 2; const s = buf.toString("utf8", o, o + n); o += n; return s; };
+  const payload = (t) => {
+    switch (t) {
+      case 1: return buf.readInt8(o++);
+      case 2: return i16();
+      case 3: return i32();
+      case 4: { const v = buf.readBigInt64BE(o); o += 8; return v; }
+      case 5: { const v = buf.readFloatBE(o); o += 4; return v; }
+      case 6: { const v = buf.readDoubleBE(o); o += 8; return v; }
+      case 7: { const n = i32(); const v = buf.subarray(o, o + n); o += n; return v; }
+      case 8: return str();
+      case 9: { const et = u8(), n = i32(), items = []; for (let k = 0; k < n; k++) items.push(payload(et)); return { et, items }; }
+      case 10: { const m = new Map(); for (;;) { const tt = u8(); if (tt === 0) break; const name = str(); m.set(name, { t: tt, v: payload(tt) }); } return m; }
+      case 11: { const n = i32(), a = []; for (let k = 0; k < n; k++) a.push(i32()); return a; }
+      case 12: { const n = i32(), a = []; for (let k = 0; k < n; k++) { a.push(buf.readBigInt64BE(o)); o += 8; } return a; }
+      default: throw new Error("NBT: unbekannter Typ " + t);
+    }
+  };
+  const t = u8(); if (t !== 10) throw new Error("NBT: kein Compound"); str(); return { t, v: payload(10) };
+};
+const nbtWrite = (root) => {
+  const parts = []; const w = (b) => parts.push(b);
+  const u8 = (n) => w(Buffer.from([n & 255])), i16 = (n) => { const b = Buffer.alloc(2); b.writeInt16BE(n); w(b); }, i32 = (n) => { const b = Buffer.alloc(4); b.writeInt32BE(n); w(b); };
+  const str = (s) => { const b = Buffer.from(s, "utf8"); i16(b.length); w(b); };
+  const payload = (t, v) => {
+    switch (t) {
+      case 1: u8(v); break; case 2: i16(v); break; case 3: i32(v); break;
+      case 4: { const b = Buffer.alloc(8); b.writeBigInt64BE(BigInt(v)); w(b); break; }
+      case 5: { const b = Buffer.alloc(4); b.writeFloatBE(v); w(b); break; }
+      case 6: { const b = Buffer.alloc(8); b.writeDoubleBE(v); w(b); break; }
+      case 7: i32(v.length); w(Buffer.from(v)); break;
+      case 8: str(v); break;
+      case 9: u8(v.items.length ? v.et : 0); i32(v.items.length); for (const it of v.items) payload(v.et, it); break;
+      case 10: for (const [name, e] of v) { u8(e.t); str(name); payload(e.t, e.v); } u8(0); break;
+      case 11: i32(v.length); for (const x of v) i32(x); break;
+      case 12: i32(v.length); for (const x of v) { const b = Buffer.alloc(8); b.writeBigInt64BE(BigInt(x)); w(b); } break;
+    }
+  };
+  u8(root.t); str(""); payload(root.t, root.v); return Buffer.concat(parts);
+};
+const serverList = (root) => { let e = root.v.get("servers"); if (!e || e.t !== 9) { e = { t: 9, v: { et: 10, items: [] } }; root.v.set("servers", e); } if (e.v.items.length === 0) e.v.et = 10; return e.v; };
+const cleanServers = (list) => (Array.isArray(list) ? list : []).map((s) => ({ name: String((s && s.name) || "").slice(0, 40).trim(), ip: String((s && s.ip) || "").slice(0, 80).trim() })).filter((s) => s.name && /^[A-Za-z0-9_.:\-\[\]]+$/.test(s.ip)).slice(0, 20);
+const serversFile = (gameDir) => path.join(gameDir, "servers.dat");
+function addPackServers(gameDir, list) {
+  list = cleanServers(list); if (!list.length) return;
+  const f = serversFile(gameDir); let root;
+  try { root = fs.existsSync(f) ? nbtRead(fs.readFileSync(f)) : null; } catch { root = null; }
+  if (!root) root = { t: 10, v: new Map() };
+  const sl = serverList(root), have = new Set(sl.items.map((c) => { const e = c.get("ip"); return e && e.v; }));
+  const add = list.filter((s) => !have.has(s.ip)).map((s) => new Map([["ip", { t: 8, v: s.ip }], ["name", { t: 8, v: s.name }]]));
+  if (!add.length) return; sl.items.unshift(...add); fs.writeFileSync(f, nbtWrite(root));
+}
+/** the copy that goes back to the shared list: without the servers of this profile's modpack */
+function removePackServers(file, list) {
+  list = cleanServers(list); if (!list.length || !fs.existsSync(file)) return; const ips = new Set(list.map((s) => s.ip));
+  try { const root = nbtRead(fs.readFileSync(file)), sl = serverList(root); sl.items = sl.items.filter((c) => { const e = c.get("ip"); return !(e && ips.has(e.v)); }); root.v.get("servers").v = sl; fs.writeFileSync(file, nbtWrite(root)); } catch { /* an unreadable list stays as it is */ }
+}
+
 /* ------------------------------ shared between all profiles ------------------------------ */
 // Worlds, shader packs and resource packs are folders: every profile gets a link to one common folder. Settings, the server list, the shader settings and the LAC mod
 // settings are single files: the common copy is put into the profile before the game starts and the profile's copy goes back when it closes (a link would break
@@ -614,7 +677,7 @@ async function launch({ profile, auth, send = () => {}, onClose = () => {}, rejo
   stage("prepare", "Vorbereiten", 3);
   if (!LOADERS.includes(profile.loader)) throw new Error(`Unbekannter Loader ${profile.loader}`);
   fs.mkdirSync(modsDir(profile.id), { recursive: true });
-  try { linkShared(path.dirname(modsDir(profile.id)), profile.id); syncSharedFiles(path.dirname(modsDir(profile.id)), "in"); } catch (e) { send({ type: "log", line: "Gemeinsame Daten: " + e.message }); }
+  try { linkShared(path.dirname(modsDir(profile.id)), profile.id); syncSharedFiles(path.dirname(modsDir(profile.id)), "in"); addPackServers(path.dirname(modsDir(profile.id)), profile.servers); } catch (e) { send({ type: "log", line: "Gemeinsame Daten: " + e.message }); }
   await ensureJava(profile.mc, profile, send);
 
   stage("loader", `${profile.loader} prüfen`, 8);
@@ -656,7 +719,7 @@ async function launch({ profile, auth, send = () => {}, onClose = () => {}, rejo
     }
   };
   mclc.on("debug", onLine); mclc.on("data", onLine);
-  mclc.on("close", (code) => { try { syncSharedFiles(gameDir, "out"); } catch { /* next time */ } stage("closed", code === 0 ? "Beendet" : `Beendet (Code ${code})`, 0); onClose(code); });
+  mclc.on("close", (code) => { try { syncSharedFiles(gameDir, "out"); removePackServers(path.join(SHARED(), "servers.dat"), profile.servers); } catch { /* next time */ } stage("closed", code === 0 ? "Beendet" : `Beendet (Code ${code})`, 0); onClose(code); });
 
   stage("files", "Dateien prüfen und laden", 40);
   const child = await mclc.launch({
@@ -671,4 +734,4 @@ async function launch({ profile, auth, send = () => {}, onClose = () => {}, rejo
   return { kill: () => child.kill() };
 }
 
-module.exports = { searchContent, addContent, ensureDeps, checkPack, updatePack, syncMods, updateRepo, buildFile, ROOT, LOADERS, FABRIC_API, readProfiles, writeProfiles, modsDir, manifest, versions, searchMods, addMod, removeMod, ensureFabricApi, installPreset, PRESET, searchPacks, installPack, ensureFabric, ensureInstalled, findJava, ensureJava, ensureRuntimes, launch, linkShared, syncSharedFiles, SHARED, ramFor, DIST };
+module.exports = { searchContent, addContent, ensureDeps, checkPack, updatePack, syncMods, updateRepo, buildFile, ROOT, LOADERS, FABRIC_API, readProfiles, writeProfiles, modsDir, manifest, versions, searchMods, addMod, removeMod, ensureFabricApi, installPreset, PRESET, searchPacks, installPack, ensureFabric, ensureInstalled, findJava, ensureJava, ensureRuntimes, launch, linkShared, syncSharedFiles, SHARED, nbtRead, nbtWrite, addPackServers, removePackServers, cleanServers, ramFor, DIST };

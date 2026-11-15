@@ -14,6 +14,7 @@ const instDir = (id) => path.dirname(core.modsDir(id));
 /** The profile without machine-specific bits (java path) and without the LAC mod itself. */
 function slim(p) {
   return { name: p.name, creator: p.creator || "", loader: p.loader, mc: p.mc, ram: p.ram || "4096M", jvmArgs: p.jvmArgs || "", lac: p.lac !== false,
+    servers: core.cleanServers(p.servers),
     mods: (p.mods || []).map((m) => ({ id: m.id, title: m.title, file: m.file, dep: !!m.dep, requiredBy: m.requiredBy || [] })) };
 }
 
@@ -61,6 +62,7 @@ async function create(data, send, modsFrom) {
   const s = data.profile;
   if (!s || !core.LOADERS.includes(s.loader) || typeof s.mc !== "string" || typeof s.name !== "string") throw new Error("Ungültiges Profil");
   const prof = { id: newId(), creator: typeof s.creator === "string" ? s.creator.slice(0, 24) : "", name: s.name.slice(0, 60), loader: s.loader, mc: s.mc, mods: [], ram: s.ram || "4096M", minRam: "", java: "", jvmArgs: typeof s.jvmArgs === "string" ? s.jvmArgs : "", width: "", height: "", lac: s.lac !== false, playtime: 0 };
+  prof.servers = core.cleanServers(s.servers);
   const all = core.readProfiles(); all.push(prof); core.writeProfiles(all);
   fs.mkdirSync(core.modsDir(prof.id), { recursive: true });
   const list = Array.isArray(s.mods) ? s.mods : [];
@@ -103,6 +105,7 @@ async function applyUpdate(profileId, data, oldIds, send = () => {}) {
     send({ type: "log", line: `Lade ${m.title || m.id}…` });
     try { await core.addMod(profileId, { id: String(m.id), title: m.title }, send); } catch (e) { send({ type: "log", line: `Übersprungen: ${m.title || m.id} (${e.message})` }); }
   }
+  { const all = core.readProfiles(), me = all.find((x) => x.id === profileId); if (me) { me.servers = core.cleanServers(s.servers); core.writeProfiles(all); } }   // the modpack's servers follow the modpack
   // config files: only the ones the player does not have yet (their own settings stay)
   const root = path.join(instDir(profileId), "config");
   const fresh = {}; for (const [rel, b64] of Object.entries(data.config || {})) { const t = path.resolve(root, rel); if (t.startsWith(root + path.sep) && !fs.existsSync(t)) fresh[rel] = b64; }

@@ -569,6 +569,7 @@ function openSettings(p) {
    <label class="f">Java-Pfad (leer = automatisch: Java 25 für MC 26.x, sonst Java 21)</label><input id="pjava" style="width:100%" value="${esc(p.java || "")}" placeholder="C:\\...\\bin\\javaw.exe">
    <label class="f">JVM-Argumente (zusätzlich zu den Start-Optimierungen)</label><input id="pargs" style="width:100%" value="${esc(p.jvmArgs || "")}" placeholder="-XX:+UseZGC">
    <div class="row"><div class="grow"><label class="f">Fensterbreite</label><input id="pw" type="number" style="width:100%" value="${esc(p.width || "")}" placeholder="auto"></div><div class="grow"><label class="f">Höhe</label><input id="ph" type="number" style="width:100%" value="${esc(p.height || "")}" placeholder="auto"></div></div>
+   ${me && me.dev ? `<label class="f" style="margin-top:14px">Server im Modpack (nur für dieses Profil, ein Server pro Zeile: Name | Adresse)</label><textarea id="sservers" rows="3" style="width:100%" placeholder="Mein Server | play.example.net">${esc((p.servers || []).map((s) => s.name + " | " + s.ip).join("\n"))}</textarea><div class="mut" style="font-size:12px">Wer das Modpack hat, bekommt diese Server in die Serverliste dieses Profils, nach „Modpack veröffentlichen" und seinem Update.</div>` : ""}
    ${p.pack ? `<div class="row" style="margin-top:14px;gap:8px"><span class="mut grow" id="packinfo">Modpack-Version ${esc(p.pack.version)}</span><button class="btn sm" id="packup">Auf Update prüfen</button></div>` : ""}
    ${p.fromPack ? `<div class="row" style="margin-top:14px;gap:8px"><span class="mut grow" id="lpinfo">LAC Modpack, Version ${esc(p.packVer || 1)}</span><button class="btn sm" id="lpup">Auf Update prüfen</button></div>` : ""}
    <label class="row" style="margin-top:14px;gap:8px"><input type="checkbox" id="plac" ${p.lac !== false ? "checked" : ""}> LAC Client Mod in dieses Profil laden</label>
@@ -597,6 +598,7 @@ function openSettings(p) {
   $("#scancel").onclick = () => modal("mset", false);
   $("#ssave").onclick = guard(async () => { const gb = Math.min(sysMb / 1024, Math.max(1, parseFloat(rn.value) || 4));
     Object.assign(p, { name: $("#sname").value.trim() || p.name, creator: $("#screator").value.trim(), ram: $("#runl").checked ? "unlimited" : Math.round(gb * 1024) + "M", minRam: "", java: $("#pjava").value.trim(), jvmArgs: $("#pargs").value.trim(), width: $("#pw").value, height: $("#ph").value, lac: $("#plac").checked });
+    if ($("#sservers")) p.servers = $("#sservers").value.split(String.fromCharCode(10)).map((l) => { const i = l.indexOf("|"); return i < 0 ? null : { name: l.slice(0, i).trim(), ip: l.slice(i + 1).trim() }; }).filter(Boolean);
     profiles = await lac.saveProfile(p); modal("mset", false); renderProfiles(); });
   $("#sdel").onclick = guard(async () => { if (!(await ask(`Profil „${p.name}“ löschen? Die Mods des Profils bleiben auf der Festplatte.`))) return; profiles = await lac.deleteProfile(p.id); cur = profiles[0] || null; modal("mset", false); renderProfiles(); });
   modal("mset");
