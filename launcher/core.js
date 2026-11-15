@@ -642,15 +642,34 @@ function removePackServers(file, list) {
 const SHARED = () => path.join(ROOT, "shared");
 const SHARED_DIRS = ["saves", "shaderpacks", "resourcepacks"];
 const SHARED_FILES = ["options.txt", "servers.dat", "optionsshaders.txt", "optionsof.txt", path.join("config", "lac.json")];
+const sameFile = (a, b) => { try { const x = fs.statSync(a), y = fs.statSync(b); if (x.isDirectory() || y.isDirectory()) return false; return x.size === y.size && fs.readFileSync(a).equals(fs.readFileSync(b)); } catch { return false; } };
+/** earlier versions kept both copies of a pack that two profiles had ("Name (id).zip"): identical ones are removed */
+function dropDuplicates(dir) {
+  let names = []; try { names = fs.readdirSync(dir); } catch { return; }
+  for (const f of names) {
+    const m = /^(.*) \(((?=[a-z0-9]*\d)[a-z0-9]{6,12}|profil)\)(\.[^.]*)?$/i.exec(f); if (!m) continue;   // the suffix is a profile id, not a name like (1)
+    const base = path.join(dir, m[1] + (m[3] || ""));
+    if (!fs.existsSync(base)) continue;
+    try {   // the same pack twice: the newer copy stays under the real name
+      const copy = path.join(dir, f), keepCopy = !sameFile(base, copy) && fs.statSync(copy).mtimeMs > fs.statSync(base).mtimeMs;
+      if (keepCopy) fs.renameSync(copy, base); else fs.rmSync(copy, { recursive: true, force: true });
+    } catch { /* in use: the next start tries again */ }
+  }
+}
 function linkShared(gameDir, tag = "") {
   for (const d of SHARED_DIRS) {
+    dropDuplicates(path.join(SHARED(), d));
     const link = path.join(gameDir, d), target = path.join(SHARED(), d); fs.mkdirSync(target, { recursive: true });
     let st = null; try { st = fs.lstatSync(link); } catch { /* not there yet */ }
     if (st && st.isSymbolicLink()) continue;   // already joined (a junction counts as a link)
     if (st && st.isDirectory()) {   // what this profile already has moves into the common folder, nothing is overwritten (a clash keeps both)
       for (const f of fs.readdirSync(link)) {
         let to = path.join(target, f);
-        if (fs.existsSync(to)) { const ext = path.extname(f); to = path.join(target, `${path.basename(f, ext)} (${tag || "profil"})${ext}`); }
+        if (fs.existsSync(to)) {
+          const mine = path.join(link, f), newer = !sameFile(to, mine) && fs.statSync(mine).mtimeMs > fs.statSync(to).mtimeMs;   // the same pack twice: only the newer copy stays
+          if (!newer) { fs.rmSync(mine, { recursive: true, force: true }); continue; }
+          fs.rmSync(to, { recursive: true, force: true });
+        }
         fs.renameSync(path.join(link, f), to);
       }
       fs.rmdirSync(link);

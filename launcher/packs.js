@@ -61,7 +61,7 @@ async function update(profileId, send = () => {}) {
 /** Dev rank: publish (or update) a profile as a LAC Modpack */
 async function publish(userUuid, profileId, desc) {
   const me = store.me(userUuid);
-  if (!me.dev || !me.devCode) throw new Error("Nur mit Dev-Rang");
+  if (!me.dev || !me.devCode) throw new Error("Zum Veröffentlichen brauchst du den Dev-Code: löse ihn unter Rang ein (ein vergebener Rang allein reicht dafür nicht).");
   const all = core.readProfiles(), prof = all.find((x) => x.id === profileId);
   if (!prof) throw new Error("Profil nicht gefunden");
   let icon = ""; try { const b = fs.readFileSync(iconFile(profileId)); if (b.length <= 60000) icon = b.toString("base64"); } catch { /* none */ }
@@ -72,7 +72,7 @@ async function publish(userUuid, profileId, desc) {
 }
 
 async function remove(userUuid, id) {
-  const me = store.me(userUuid); if (!me.dev || !me.devCode) throw new Error("Nur mit Dev-Rang");
+  const me = store.me(userUuid); if (!me.dev || !me.devCode) throw new Error("Zum Veröffentlichen brauchst du den Dev-Code: löse ihn unter Rang ein (ein vergebener Rang allein reicht dafür nicht).");
   await getJson(base() + "/v1/packs", { method: "POST", body: JSON.stringify({ code: me.devCode, remove: id }) });
   return true;
 }
