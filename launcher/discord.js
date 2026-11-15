@@ -52,11 +52,11 @@ function push() {
 }
 
 /** what is shown now; null clears it */
-function set(a) { want = a; push(); }
+function set(a) { want = a; if (!sock) connect(); push(); }
 
 function start() {
   clientId = readId(); if (!clientId) return false;
-  started = Date.now(); connect(); timer = setInterval(connect, 15000);   // Discord may be started after the launcher
+  started = Date.now(); connect(); timer = setInterval(() => { connect(); push(); }, 15000);   // reconnect, and say it again now and then so Discord never loses it   // Discord may be started after the launcher
   idle(); return true;
 }
 function stop() { if (timer) clearInterval(timer); timer = null; try { set(null); if (sock) sock.destroy(); } catch { /* ignore */ } sock = null; ready = false; }
