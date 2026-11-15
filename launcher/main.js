@@ -399,6 +399,11 @@ async function pollRoles() {
   } catch { /* offline: next round */ }
 }
 setInterval(pollRoles, 5000); setTimeout(pollRoles, 3000);
+ipcMain.handle("mc:lang", () => {   // "de" or "en" from the language Minecraft is set to, "" while there is no options.txt yet
+  const files = [path.join(core.SHARED(), "options.txt"), ...core.readProfiles().map((p) => path.join(core.ROOT, "instances", p.id, "options.txt"))];
+  for (const f of files) { try { const m = /^lang:(\S+)/m.exec(fs.readFileSync(f, "utf8")); if (m) return /^de/i.test(m[1]) ? "de" : "en"; } catch { /* next */ } }
+  return "";
+});
 ipcMain.handle("roles:get", async () => (await fetch(packs.base() + "/v1/roles", { signal: AbortSignal.timeout(10000) })).json());
 ipcMain.handle("roles:set", async (e, name, rank) => {
   const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");

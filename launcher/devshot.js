@@ -33,6 +33,17 @@ module.exports = (w, out) => {
       for (const [n, yaw] of [["back", 3.14], ["side", 4.7], ["three", 3.9]]) { await js(`heroView.yaw = ${yaw}; heroView.draw()`); await sleep(500); fs.writeFileSync(path.join(out, "cape_" + n + ".png"), (await w.webContents.capturePage()).toPNG()); }
       return app.quit();
     }
+    if (process.env.LAC_AUDIT) {   // English audit: every page in English, the lines that still read German are written to audit.txt
+      await sleep(5000); await js(`window.setLang("en")`); await sleep(600);
+      const GER = /[äöüÄÖÜß]|(?<![\p{L}])(?:und|der|die|das|nicht|mit|für|ein|eine|wird|ist|zum|zur|bitte|alle|kein|keine|auf|aus|von|nach|noch|oder|sind|dein|deine|dich|dir|du|hier|über|unter|schon|neue|neuer|beim|dem|den|des|im|am|zu|wie|wenn|dann|nur|kann|man|Spieler|Seite|Freunde|Rang)(?![\p{L}])/u;
+      const seen = new Set(), pages = await js(`[...document.querySelectorAll("nav button[data-p]")].map((b) => b.dataset.p)`);
+      for (const pg of pages) {
+        await js(`document.querySelector('nav button[data-p="${pg}"]').click()`); await sleep(900);
+        const text = await js(`(document.querySelector(".page.on") || document.body).innerText`);
+        for (const line of String(text).split(String.fromCharCode(10))) { const t = line.trim(); if (t.length > 2 && GER.test(t) && !seen.has(t)) { seen.add(t); fs.appendFileSync(path.join(out, "audit.txt"), `[${pg}] ${t}` + String.fromCharCode(10)); } }
+      }
+      log("audit done: " + seen.size); return app.quit();
+    }
     if (process.env.LAC_THUMBS) {   // the game menu's grid pictures: every model cosmetic alone on a transparent background, 192x144 (see mod/.../textures/gui/cos)
       const { nativeImage } = require("electron"), dest = process.env.LAC_THUMBS;
       const ids = await js(`cat.items.filter((i) => MODEL_TYPES.includes(i.type)).map((i) => i.id)`);

@@ -251,7 +251,7 @@ Promise.all(["400 16px LacInter","600 16px LacInter","16px LacPoppins","16px Lac
  <div class="card" style="max-width:560px;margin-bottom:16px"><h3>Einmal-Codes erzeugen</h3><p class="mut" style="margin-top:0">Jeder Code gilt für ein Konto und nur einmal, der Rang bleibt dauerhaft. Gib die Codes weiter, sie werden hier nur jetzt angezeigt.</p>
   <div class="row" style="gap:8px;flex-wrap:wrap"><select id="cmrank"><option value="plus">LAC+</option><option value="pro">LAC Pro</option><option value="creator">Founder</option></select><input id="cmcount" type="number" min="1" max="20" value="1" style="width:80px"><button class="btn p" id="cmmake">Erzeugen</button><button class="btn" id="cmcopy" style="display:none">Kopieren</button></div>
   <textarea id="cmout" readonly rows="4" style="width:100%;margin-top:10px;display:none"></textarea></div>
- <div class="card" style="max-width:560px;margin-bottom:16px"><div class="row"><h3 class="grow" style="margin:0">Protokoll</h3><button class="btn sm" id="dlrefresh">Aktualisieren</button></div><p class="mut" style="margin:6px 0 10px;font-size:12px">Die letzten Änderungen von Devs: Rollen, Standardwerte der Cosmetics, erzeugte Codes.</p><div id="dlist" class="mut" style="font-size:13px;max-height:260px;overflow:auto">–</div></div>
+ <div class="card" style="max-width:560px;margin-bottom:16px"><div class="row"><h3 class="grow" style="margin:0">Protokoll</h3><button class="btn sm" id="dlrefresh">Aktualisieren</button></div><p class="mut" style="margin:6px 0 10px;font-size:12px">Die letzten Änderungen von Devs: Rollen, Standardwerte der Cosmetics, erzeugte Codes.</p><div id="devloglist" class="mut" style="font-size:13px;max-height:260px;overflow:auto">–</div></div>
  <div id="rlist"></div></section>
 <section class="page" id="plus"><h2>LAC+</h2><p class="sub">LAC+ schaltet alle Cosmetics außer den Bundles frei, LAC Pro nur Badge und Name. Bundles schaltet jeder nur über seine Aufgabe frei. Alles liegt verschlüsselt lokal in <code>%APPDATA%\.lac\lac.dat</code>, es gibt keinen Server.</p>
  <div class="card" style="max-width:560px"><h3>Status</h3><div id="status" class="mut">Bitte anmelden.</div>
@@ -259,24 +259,23 @@ Promise.all(["400 16px LacInter","600 16px LacInter","16px LacPoppins","16px Lac
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><div class="row"><button class="btn d" id="tofree" style="display:none">Zu Free wechseln</button></div>
   <p class="mut" id="tofreeinfo" style="font-size:12px;display:none">Mit „Zu Free wechseln" enden alle Vorteile, bis du den Code wieder eingibst. Coins und gekaufte Cosmetics bleiben.</p></div>
  <div class="card" style="max-width:860px;margin-top:16px"><h3>Was jeder Rang kann</h3>
-  <table class="rt"><thead><tr><th></th><th>Free</th><th>Pro</th><th>Plus</th><th>Founder</th><th>Dev</th></tr></thead><tbody>
-   <tr><td>Badge und Name</td><td>weiß</td><td>Farben</td><td>Farben + Animationen</td><td>Farben + Animationen</td><td>alles, auch Rot und Feuer</td></tr>
-   <tr><td>Chat-Farbton</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-   <tr><td>Profile und Modpacks</td><td>unbegrenzt</td><td>unbegrenzt</td><td>unbegrenzt</td><td>unbegrenzt</td><td>unbegrenzt</td></tr>
-   <tr><td>Cosmetics</td><td>Coins</td><td>Coins</td><td>alle außer Bundles</td><td>alle außer Dev-Cosmetics</td><td>alle</td></tr>
-   <tr><td>Bundles</td><td>per Aufgabe</td><td>per Aufgabe</td><td>per Aufgabe</td><td>alle</td><td>alle</td></tr>
-   <tr><td>Pro-Capes</td><td>–</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-   <tr><td>Plus-Capes, Companions, Transform</td><td>–</td><td>–</td><td>✓</td><td>✓</td><td>✓</td></tr>
-   <tr><td>7 Tage Plus verschenken</td><td>–</td><td>–</td><td>–</td><td>✓</td><td>–</td></tr>
-   <tr><td>Dev-Capes, Größe und Position, Codes erzeugen</td><td>–</td><td>–</td><td>–</td><td>–</td><td>✓</td></tr>
-   <tr><td>Level-Titel (ab 10, 25, 50)</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+  <table class="rt"><thead><tr><th></th><th>Free</th><th>Pro</th><th>Plus</th><th>Founder</th></tr></thead><tbody>
+   <tr><td>Badge und Name</td><td>weiß</td><td>Farben</td><td>Farben + Animationen</td><td>Farben + Animationen</td></tr>
+   <tr><td>Chat-Farbton</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+   <tr><td>Profile und Modpacks</td><td>unbegrenzt</td><td>unbegrenzt</td><td>unbegrenzt</td><td>unbegrenzt</td></tr>
+   <tr><td>Cosmetics</td><td>Coins</td><td>Coins</td><td>alle außer Bundles</td><td>alle</td></tr>
+   <tr><td>Bundles</td><td>per Aufgabe</td><td>per Aufgabe</td><td>per Aufgabe</td><td>alle</td></tr>
+   <tr><td>Pro-Capes</td><td>–</td><td>✓</td><td>✓</td><td>✓</td></tr>
+   <tr><td>Plus-Capes, Companions, Transform</td><td>–</td><td>–</td><td>✓</td><td>✓</td></tr>
+   <tr><td>7 Tage Plus verschenken</td><td>–</td><td>–</td><td>–</td><td>✓</td></tr>
+   <tr><td>Level-Titel (ab 10, 25, 50)</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
   </tbody></table><p class="mut" style="font-size:12px;margin-bottom:0">Wie den Rang bekommen: Codes von Devs, einmal pro Konto, dauerhaft.</p></div>
 </section>
 
 <section class="page" id="set"><h2>Einstellungen</h2><p class="sub">Aussehen des Launchers.</p>
  <div class="card" style="max-width:520px;margin-bottom:18px"><h3>Sichtbarkeit für andere</h3><p class="mut" style="margin-top:0">Damit andere LAC-Spieler deine Cosmetics, dein Badge und deinen Namensstil sehen, braucht der Client die Adresse des LAC-Sync-Dienstes. Sie wird einmal eingetragen, danach gilt sie für alle Profile. Leer lassen = nichts wird gesendet.</p><div class="row"><input id="syncurl" class="grow" placeholder="https://lac-sync.dein-name.workers.dev"><button class="btn p" id="syncsave">Speichern</button></div></div>
  <div class="card" style="max-width:520px;margin-bottom:18px"><h3>Updates</h3><p class="mut" style="margin-top:0" id="upinfo">Der Launcher und die LAC-Mods werden beim Start automatisch geprüft.</p><button class="btn p" id="upcheck">Nach Updates suchen</button> <button class="btn p" id="upinst" style="display:none">Jetzt installieren</button></div>
- <div class="card" style="max-width:420px"><h3>Sprache</h3><select id="llang" style="width:100%"><option value="de">Deutsch</option><option value="en">English</option></select></div>
+ <div class="card" style="max-width:420px"><h3>Sprache</h3><select id="llang" style="width:100%"><option value="auto">Automatisch (wie Minecraft)</option><option value="de">Deutsch</option><option value="en">English</option></select></div>
  <div class="card" style="max-width:420px"><h3>Launcher-Schrift</h3><select id="lfont" style="width:100%"><option value="">Inter (Standard)</option><option value="LacPoppins">Poppins</option><option value="LacRighteous">Righteous</option><option value="LacAudiowide">Audiowide</option><option value="LacPress">Press Start 2P</option></select></div>
 </section>
 
@@ -780,7 +779,7 @@ $("#mq").onkeydown = (e) => { if (e.key === "Enter") modSearch(); };
 /* ---------- cosmetics ---------- */
 const thumb = (id, v) => `previews/${id}${v ? "_" + v : ""}.png`;
 /** picture of the model itself (no skin, no background): one hidden viewer renders every cosmetic once, the pictures are kept */
-const MODEL_TYPES = ["wings", "halo", "hat", "back", "pet", "boots", "morph", "buddy", "shield", "cape"], mthumbs = new Map(); let mtCanvas = null, mtView = null, mtChain = Promise.resolve();
+const MODEL_TYPES = ["wings", "halo", "hat", "back", "pet", "boots", "morph", "buddy", "mount", "shield", "cape"], mthumbs = new Map(); let mtCanvas = null, mtView = null, mtChain = Promise.resolve();
 function modelThumb(it, v) {
   const key = it.id + "|" + v; if (mthumbs.has(key)) return mthumbs.get(key);
   const p = (mtChain = mtChain.then(async () => {
@@ -789,7 +788,7 @@ function modelThumb(it, v) {
       if (!mtView.ok) return null;
       const w = 320, h = 240; mtCanvas.width = w; mtCanvas.height = h; mtCanvas.style.width = w + "px"; mtCanvas.style.height = h + "px";
       mtView.yaw = it.type === "wings" || it.type === "back" ? Math.PI - 0.3 : -0.55; mtView.pitch = 0.12; mtView.live = false;
-      if (it.type === "morph" || it.type === "buddy") { const d = await lac.entityGet(it.id); if (!d.json) return null; mtView.cos = []; await mtView.setEntities([{ json: d.json, png: d.png, scale: it.type === "morph" ? ({ morph_dragon: 0.2, morph_ravager: 0.8 }[it.id] || 1) : 1, dx: 0, dz: 0 }], true); await new Promise((r) => setTimeout(r, 80)); }
+      if (it.type === "morph" || it.type === "buddy" || it.type === "mount") { const d = await lac.entityGet(it.id); if (!d.json) return null; mtView.cos = []; await mtView.setEntities([{ json: d.json, png: d.png, scale: it.type === "morph" ? ({ morph_dragon: 0.2, morph_ravager: 0.8 }[it.id] || 1) : 1, dx: 0, dz: 0 }], true); await new Promise((r) => setTimeout(r, 80)); }
       else { await mtView.setEntities([], false); await mtView.setCosmetics([{ id: it.id, variant: v }], (id) => meshLoad(id), null); }
       return await mtView.snapshot(w, h);
     } catch { return null; }
@@ -811,7 +810,7 @@ function soloView(it, v) {
   if (!soloV) { soloV = new SkinView(soloEl); soloV.solo = true; } if (!soloV.ok) return;
   const key = it.id + "|" + v; if (soloV.cosFor === key) { soloV.draw(); return; } soloV.cosFor = key;
   soloV.yaw = it.type === "wings" || it.type === "back" ? Math.PI - 0.3 : -0.5; soloV.pitch = 0.08; soloV.setEntities([], false); soloV.setCosmetics([], () => null);
-  if (it.type === "morph" || it.type === "buddy") lac.entityGet(it.id).then((d) => { if (soloV.cosFor === key && d.json) soloV.setEntities([{ json: d.json, png: d.png, scale: it.type === "morph" ? ({ morph_dragon: 0.2, morph_ravager: 0.8 }[it.id] || 1) : 1, dx: 0, dz: 0 }], true); });
+  if (it.type === "morph" || it.type === "buddy" || it.type === "mount") lac.entityGet(it.id).then((d) => { if (soloV.cosFor === key && d.json) soloV.setEntities([{ json: d.json, png: d.png, scale: it.type === "morph" ? ({ morph_dragon: 0.2, morph_ravager: 0.8 }[it.id] || 1) : 1, dx: 0, dz: 0 }], true); });
   else soloV.setCosmetics([{ id: it.id, variant: v }], (id) => meshLoad(id), (l, t) => lac.meshFrames(l, t));
 }
 /** who a cosmetic is for: shown as a small tag on every card; Dev cosmetics are only listed for Devs */
@@ -848,7 +847,7 @@ function renderCos() {
 
 /* ---------- LAC+ / badge ---------- */
 $("#redeem").onclick = guard(async () => { me = await lac.redeem($("#code").value); $("#rmsg").innerHTML = '<span class="ok">Code eingelöst!</span>'; $("#code").value = ""; await loadMe(); });
-const devLogLoad = guard(async () => { const log = await lac.devLog(); $("#dlist").innerHTML = log.length ? log.map((e) => `<div style="padding:3px 0;border-bottom:1px solid var(--line)"><span class="mut">${new Date(e.t).toLocaleString()}</span> · <b>${esc(e.by)}</b> ${esc(e.what)}</div>`).join("") : "Noch nichts."; });
+const devLogLoad = guard(async () => { const log = await lac.devLog(); $("#devloglist").innerHTML = log.length ? log.map((e) => `<div style="padding:3px 0;border-bottom:1px solid var(--line)"><span class="mut">${new Date(e.t).toLocaleString()}</span> · <b>${esc(e.by)}</b> ${esc(e.what)}</div>`).join("") : "Noch nichts."; });
 $("#dlrefresh").onclick = devLogLoad; document.querySelector('nav button[data-p="dev"]').addEventListener("click", devLogLoad);
 $("#cmmake").onclick = guard(async () => { const codes = await lac.makeCodes($("#cmrank").value, +$("#cmcount").value || 1); const o = $("#cmout"); o.value = codes.join("\n"); o.style.display = "block"; $("#cmcopy").style.display = ""; });
 $("#cmcopy").onclick = () => { navigator.clipboard.writeText($("#cmout").value).then(() => toast("Kopiert", true)).catch(() => { $("#cmout").select(); }); };

@@ -16,13 +16,8 @@
   },
   {
     "loader": "fabric",
-    "mc": "26.1",
-    "file": "lac-fabric-26.1.jar"
-  },
-  {
-    "loader": "fabric",
-    "mc": "26.1.1",
-    "file": "lac-fabric-26.1.1.jar"
+    "mc": "26.2",
+    "file": "lac-fabric-26.2.jar"
   },
   {
     "loader": "fabric",
@@ -31,7 +26,12 @@
   },
   {
     "loader": "fabric",
-    "mc": "26.2",
-    "file": "lac-fabric-26.2.jar"
+    "mc": "26.1.1",
+    "file": "lac-fabric-26.1.1.jar"
+  },
+  {
+    "loader": "fabric",
+    "mc": "26.1",
+    "file": "lac-fabric-26.1.jar"
   }
 ]
