@@ -60,11 +60,16 @@ const ownsBase = (d, id) => (item(id) && item(id).plus ? !!(P(d) || d.dev) : fal
 const owns = (d, id) => { const it = item(id); return it && it.rank ? rankOk(d, id) : ownsBase(d, id); };
 const item = (id) => catalog().items.find((i) => i.id === id);
 
+const GRANTED = {};   // dashless uuid -> the rank a Dev gave ("dev", "plus", "pro", "creator", "free"), from the sync service's role list
+const FLAGS = ["dev", "plus", "pro", "creator"], plainId = (u) => String(u || "").replace(/-/g, "").toLowerCase();
+const applyGranted = (d, uuid) => { const g = GRANTED[plainId(uuid)], before = {}; for (const k of FLAGS) before[k] = !!d[k]; if (FLAGS.includes(g)) d[g] = true; return before; };
 /** run fn on a user's record, then save. Returns fn's result (null = ok, string = error shown in the UI). */
 function edit(uuid, fn) {
   const f = read();
   const d = (f.users[uuid] ||= blank());
+  const before = applyGranted(d, uuid), applied = {}; for (const k of FLAGS) applied[k] = !!d[k];   // fn sees the granted rank ...
   const err = fn(d);
+  for (const k of FLAGS) if (!!d[k] === applied[k]) d[k] = before[k];   // ... but only what fn itself changed is saved
   if (!err) write(f);
   return err || null;
 }
@@ -74,7 +79,9 @@ module.exports = {
   /** this PC's secret for the sync service; the game keeps it in the same store, so launcher and game are the same device */
   syncKey(uuid) { edit(uuid, (d) => { if (!d.syncKey || d.syncKey.length < 32) d.syncKey = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, ""); }); return read().users[uuid].syncKey; },
   devCode(uuid) { const d = read().users[uuid]; return d && d.dev ? d.devCode || "" : ""; },
-  me(uuid) { const f = read(), m = Object.assign(blank(), f.users[uuid] || {}); m.creator = !!m.creator; m.plus = !!(m.plus || m.creator || (m.giftUntil || 0) > Date.now()); return m; },   // for the screens a Creator counts as LAC+
+  setGranted(map) { for (const k of Object.keys(GRANTED)) delete GRANTED[k]; for (const [id, v] of Object.entries(map || {})) GRANTED[plainId(id)] = v && v.rank; },
+  grantedOf(uuid) { return GRANTED[plainId(uuid)] || ""; },
+  me(uuid) { const f = read(), m = Object.assign(blank(), f.users[uuid] || {}); applyGranted(m, uuid); m.creator = !!m.creator; m.plus = !!(m.plus || m.creator || (m.giftUntil || 0) > Date.now()); return m; },   // for the screens a Creator counts as LAC+
   /** the chat colours a rank may use (the sync service checks it again): Free and Pro a short list, Plus and Creator a long one without red, Dev also the reds */
   chatPalette(uuid) {
     const d = this.me(uuid), l = ["#ffffff", "#aaaaaa", "#55ffff", "#55ff55"], paid = d.dev || d.plus || d.pro;   // me(): a Creator counts as plus

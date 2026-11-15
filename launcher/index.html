@@ -607,6 +607,7 @@ async function openShare(p) {
   $("#scode").value = await lac.shareCode(p.id);
 }
 lac.onLaunch((e) => {
+  if (e.type === "rank") { loadMe().then(() => { if (!e.quiet) toast("Dein Rang wurde aktualisiert: " + rank(me), true); }); return; }
   if (e.type === "update") { toast(e.line, true); return; }
   if (e.type === "pack") { $("#pmsg").textContent = `${e.title} (${e.done}/${e.total})`; return; }
   if (e.type === "preset") { $("#pstat").textContent = e.title ? `Installiere ${e.title} (${e.done + 1}/${e.total})…` : "Fertig"; return; }
