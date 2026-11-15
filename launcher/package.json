@@ -1,6 +1,6 @@
 {
   "name": "lac-launcher",
-  "version": "0.1.83",
+  "version": "0.1.84",
   "main": "main.js",
   "description": "LAC Launcher",
   "author": "LAC",
@@ -49,7 +49,6 @@
       "defaults.json",
       "logo.png",
       "logo-small.png",
-      "logo-mask.png",
       "previews/**",
       "fonts/**",
       "dist/**",
