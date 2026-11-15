@@ -400,6 +400,8 @@ async function pollRoles() {
     rolesFirst = false;
   } catch { /* offline: next round */ }
 }
+const retryDev = () => { try { packs.retryPending(uuid()).catch(() => {}); } catch { /* not signed in */ } };
+setInterval(retryDev, 10 * 60_000); setTimeout(retryDev, 90_000);   // Dev actions that could not be sent
 setInterval(pollRoles, 10 * 60_000); setTimeout(pollRoles, 3000);   // every 10 minutes, from the GitHub copy: the sync service has a daily limit
 ipcMain.handle("mc:lang", () => {   // "de" or "en" from the language Minecraft is set to, "" while there is no options.txt yet
   const files = [path.join(core.SHARED(), "options.txt"), ...core.readProfiles().map((p) => path.join(core.ROOT, "instances", p.id, "options.txt"))];
@@ -408,9 +410,7 @@ ipcMain.handle("mc:lang", () => {   // "de" or "en" from the language Minecraft 
 });
 ipcMain.handle("roles:get", async () => (await fetch(packs.base() + "/v1/roles", { signal: AbortSignal.timeout(10000) })).json());
 ipcMain.handle("roles:set", async (e, name, rank) => {
-  const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
-  const r = await fetch(packs.base() + "/v1/roles", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code, name: String(name), rank: String(rank), by: user() && user().name }) });
-  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return j.roles;
+  return packs.postRole(uuid(), name, rank, user() && user().name);
 });
 ipcMain.handle("sync:get", () => { try { return fs.readFileSync(SYNCFILE(), "utf8").trim(); } catch { return ""; } });
 ipcMain.handle("sync:set", (_e, url) => {

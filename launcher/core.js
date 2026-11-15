@@ -678,7 +678,8 @@ function linkShared(gameDir, tag = "") {
     fs.symlinkSync(target, link, process.platform === "win32" ? "junction" : "dir");
   }
 }
-function syncSharedFiles(gameDir, direction) {
+/** @param changedOnly (running game) only a file that is newer than the common copy goes out: every change of the settings reaches the other profiles within seconds */
+function syncSharedFiles(gameDir, direction, changedOnly) {
   fs.mkdirSync(SHARED(), { recursive: true });
   for (const f of SHARED_FILES) {
     const common = path.join(SHARED(), f), mine = path.join(gameDir, f);
@@ -686,7 +687,7 @@ function syncSharedFiles(gameDir, direction) {
       if (direction === "in") {   // the common copy wins; the first profile to have one seeds it
         if (fs.existsSync(common)) { fs.mkdirSync(path.dirname(mine), { recursive: true }); fs.copyFileSync(common, mine); }
         else if (fs.existsSync(mine)) { fs.mkdirSync(path.dirname(common), { recursive: true }); fs.copyFileSync(mine, common); }
-      } else if (fs.existsSync(mine)) { fs.mkdirSync(path.dirname(common), { recursive: true }); fs.copyFileSync(mine, common); }
+      } else if (fs.existsSync(mine)) { if (changedOnly && fs.existsSync(common) && fs.statSync(mine).mtimeMs <= fs.statSync(common).mtimeMs) continue; fs.mkdirSync(path.dirname(common), { recursive: true }); fs.copyFileSync(mine, common); }
     } catch { /* a locked file: the next start tries again */ }
   }
 }
@@ -738,7 +739,8 @@ async function launch({ profile, auth, send = () => {}, onClose = () => {}, rejo
     }
   };
   mclc.on("debug", onLine); mclc.on("data", onLine);
-  mclc.on("close", (code) => { try { syncSharedFiles(gameDir, "out"); removePackServers(path.join(SHARED(), "servers.dat"), profile.servers); } catch { /* next time */ } stage("closed", code === 0 ? "Beendet" : `Beendet (Code ${code})`, 0); onClose(code); });
+  const settingsTimer = setInterval(() => { try { syncSharedFiles(gameDir, "out", true); } catch { /* next round */ } }, 15000);   // settings are saved while playing, not only when the game closes (also after a crash)
+  mclc.on("close", (code) => { clearInterval(settingsTimer); try { syncSharedFiles(gameDir, "out"); removePackServers(path.join(SHARED(), "servers.dat"), profile.servers); } catch { /* next time */ } stage("closed", code === 0 ? "Beendet" : `Beendet (Code ${code})`, 0); onClose(code); });
 
   stage("files", "Dateien prüfen und laden", 40);
   const child = await mclc.launch({

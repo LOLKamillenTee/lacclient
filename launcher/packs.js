@@ -77,6 +77,33 @@ async function update(profileId, send = () => {}) {
   return { profiles: again, version: q.packVer };
 }
 
+/* ---- Dev actions that could not be sent (service down or at its limit): kept in a file and tried again every 10 minutes. The Dev code is never written there. ---- */
+const PENDING = () => path.join(core.ROOT, "pending-dev.json");
+const pRead = () => { try { const a = JSON.parse(fs.readFileSync(PENDING(), "utf8")); return Array.isArray(a) ? a : []; } catch { return []; } };
+const pWrite = (a) => { try { fs.mkdirSync(core.ROOT, { recursive: true }); fs.writeFileSync(PENDING(), JSON.stringify(a)); } catch { /* next time */ } };
+const temporary = (e) => /Limit|429|5\d\d|fetch failed|timeout|network|ECONN|ENOTFOUND|aborted/i.test(String((e && e.message) || e));
+function remember(kind, key, data) { const a = pRead().filter((x) => !(x.k === kind && x.key === key)); a.push({ k: kind, key, data }); pWrite(a); }
+const LATER = "Server gerade nicht erreichbar: lokal gemerkt, nächster Versuch in 10 Minuten";
+
+/** every 10 minutes: what could not be sent is sent again (a failure writes itself back) */
+async function retryPending(userUuid) {
+  const a = pRead(); if (!a.length) return; pWrite([]);
+  for (const x of a) {
+    try {
+      if (x.k === "publish") await publish(userUuid, x.key, x.data && x.data.desc);
+      else if (x.k === "remove") await remove(userUuid, x.key);
+      else if (x.k === "role") await postRole(userUuid, x.key, x.data.rank, x.data.by);
+    } catch { /* publish / remove / postRole keep it themselves when it was only the service */ }
+  }
+}
+
+/** Dev rank: give a player (by name) a rank */
+async function postRole(userUuid, name, rank, by) {
+  const code = store.me(userUuid).devCode; if (!code) throw new Error("Nur mit Dev-Rang");
+  try { return (await getJson(base() + "/v1/roles", { method: "POST", body: JSON.stringify({ code, name: String(name), rank: String(rank), by }) })).roles; }
+  catch (e) { if (temporary(e)) { remember("role", String(name), { rank: String(rank), by }); throw new Error(LATER); } throw e; }
+}
+
 /** Dev rank: publish (or update) a profile as a LAC Modpack */
 async function publish(userUuid, profileId, desc) {
   const me = store.me(userUuid);
@@ -85,14 +112,14 @@ async function publish(userUuid, profileId, desc) {
   if (!prof) throw new Error("Profil nicht gefunden");
   let icon = ""; try { const b = fs.readFileSync(iconFile(profileId)); if (b.length <= 60000) icon = b.toString("base64"); } catch { /* none */ }
   const body = { code: me.devCode, id: prof.packId || undefined, pack: { name: prof.name, creator: prof.creator || "", desc: String(desc || prof.desc || ""), mc: prof.mc, loader: prof.loader, mods: (prof.mods || []).length, share: share.exportCode(profileId), icon } };
-  const r = await getJson(base() + "/v1/packs", { method: "POST", body: JSON.stringify(body) });
+  let r; try { r = await getJson(base() + "/v1/packs", { method: "POST", body: JSON.stringify(body) }); } catch (e) { if (temporary(e)) { remember("publish", profileId, { desc }); throw new Error(LATER); } throw e; }
   prof.packId = r.id; prof.packCode = r.code; if (desc) prof.desc = String(desc); core.writeProfiles(all);
   return { id: r.id, code: r.code, profiles: all };
 }
 
 async function remove(userUuid, id) {
   const me = store.me(userUuid); if (!me.dev || !me.devCode) throw new Error("Zum Veröffentlichen brauchst du den Dev-Code: löse ihn unter Rang ein (ein vergebener Rang allein reicht dafür nicht).");
-  await getJson(base() + "/v1/packs", { method: "POST", body: JSON.stringify({ code: me.devCode, remove: id }) });
+  try { await getJson(base() + "/v1/packs", { method: "POST", body: JSON.stringify({ code: me.devCode, remove: id }) }); } catch (e) { if (temporary(e)) { remember("remove", id, {}); throw new Error(LATER); } throw e; }
   return true;
 }
 
@@ -116,4 +143,4 @@ function startBridge(exePath, handler) {
   }, 1500);
 }
 
-module.exports = { roles, updates, update, base, list, install, publish, remove, setIcon, iconFile, startBridge, base };
+module.exports = { postRole, retryPending, roles, updates, update, base, list, install, publish, remove, setIcon, iconFile, startBridge, base };
