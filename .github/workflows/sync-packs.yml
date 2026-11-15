@@ -1,0 +1,26 @@
+name: Sync-Modpacks
+# Mirrors the LAC modpack registry into packs/ (the launcher reads it from here when the sync service is down or at its limit).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+permissions:
+  contents: write
+concurrency:
+  group: sync-packs
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node .github/scripts/sync-packs-gh.js packs
+      - name: Commit
+        run: |
+          git add -A packs
+          if git diff --cached --quiet; then echo "nothing changed"; exit 0; fi
+          git -c user.name=LAC -c user.email=lac@users.noreply.github.com commit -q -m "Modpacks synced"
+          git pull -q --rebase origin main
+          git push -q origin main
