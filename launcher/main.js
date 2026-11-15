@@ -370,6 +370,24 @@ ipcMain.handle("devlog:get", async () => {
   const r = await fetch(packs.base() + "/v1/devlog", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code }) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return j.log;
 });
+/** A fresh install starts with the profile "Main" (Fabric 26.3 with the standard mods, shaders and resource packs), so the game can be started right after signing in.
+ *  It is made once: an install that already has profiles gets nothing added, and a Main the player deleted does not come back. */
+async function ensureMainProfile() {
+  const done = () => writeSettings({ ...readSettings(), mainDone: true });
+  if (readSettings().mainDone) return;
+  if (core.readProfiles().length) return done();
+  const prof = { id: "main", name: "Main", loader: "fabric", mc: "26.3", mods: [], ram: "4096M", playtime: 0, lac: true, creator: (user() && user().name) || "" };
+  core.writeProfiles([prof]); done(); tellWindow({ type: "playtime" });
+  tellWindow({ type: "update", line: "Profil Main wird eingerichtet (Mods, Shader, Ressourcenpakete)" });
+  try {
+    await core.ensureFabric("26.3");
+    const r = await core.installPreset("main", (ev) => tellWindow(ev));
+    await core.ensureFabricApi("main", () => {});
+    tellWindow({ type: "update", line: `Profil Main ist bereit (${r.installed.length} Mods und Pakete)` });
+  } catch (e) { tellWindow({ type: "update", line: "Profil Main: Einrichtung nicht abgeschlossen, was fehlt, wird beim Start nachgeholt (" + e.message + ")" }); }
+  tellWindow({ type: "playtime" });
+}
+
 /** every 5 seconds: the role list of the sync service. A rank a Dev gave counts here too, and the screens refresh when it changed. */
 let rolesFirst = true;
 async function pollRoles() {
@@ -524,7 +542,8 @@ app.whenReady().then(async () => {
     core.ensureRuntimes((ev) => { if (ev.type === "stage" && ev.label) tellWindow({ type: "update", line: ev.label }); })
       .then((got) => { if (got) tellWindow({ type: "update", line: "Java ist installiert, alles bereit" }); })
       .catch((e) => tellWindow({ type: "update", line: "Java konnte nicht installiert werden: " + e.message }))
-      .then(() => core.ensureFabric("26.3")).catch(() => { /* offline: it is fetched when the game starts */ });
+      .then(() => core.ensureFabric("26.3")).catch(() => { /* offline: it is fetched when the game starts */ })
+      .then(() => ensureMainProfile()).catch((e) => console.error("[lac] main profile:", e && e.message));
   });
   if (process.env.LAC_UISHOT) require("./devshot")(w, process.env.LAC_UISHOT);   // dev tool, off unless the variable is set
 });

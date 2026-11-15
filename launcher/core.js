@@ -572,11 +572,49 @@ function startWindow(profile) {
   return profile.width && profile.height ? { width: +profile.width, height: +profile.height } : undefined;
 }
 
+/* ------------------------------ shared between all profiles ------------------------------ */
+// Worlds, shader packs and resource packs are folders: every profile gets a link to one common folder. Settings, the server list, the shader settings and the LAC mod
+// settings are single files: the common copy is put into the profile before the game starts and the profile's copy goes back when it closes (a link would break
+// whenever the game rewrites a file).
+const SHARED = () => path.join(ROOT, "shared");
+const SHARED_DIRS = ["saves", "shaderpacks", "resourcepacks"];
+const SHARED_FILES = ["options.txt", "servers.dat", "optionsshaders.txt", "optionsof.txt", path.join("config", "lac.json")];
+function linkShared(gameDir, tag = "") {
+  for (const d of SHARED_DIRS) {
+    const link = path.join(gameDir, d), target = path.join(SHARED(), d); fs.mkdirSync(target, { recursive: true });
+    let st = null; try { st = fs.lstatSync(link); } catch { /* not there yet */ }
+    if (st && st.isSymbolicLink()) continue;   // already joined (a junction counts as a link)
+    if (st && st.isDirectory()) {   // what this profile already has moves into the common folder, nothing is overwritten (a clash keeps both)
+      for (const f of fs.readdirSync(link)) {
+        let to = path.join(target, f);
+        if (fs.existsSync(to)) { const ext = path.extname(f); to = path.join(target, `${path.basename(f, ext)} (${tag || "profil"})${ext}`); }
+        fs.renameSync(path.join(link, f), to);
+      }
+      fs.rmdirSync(link);
+    } else if (st) fs.rmSync(link, { force: true });
+    fs.mkdirSync(path.dirname(link), { recursive: true });
+    fs.symlinkSync(target, link, process.platform === "win32" ? "junction" : "dir");
+  }
+}
+function syncSharedFiles(gameDir, direction) {
+  fs.mkdirSync(SHARED(), { recursive: true });
+  for (const f of SHARED_FILES) {
+    const common = path.join(SHARED(), f), mine = path.join(gameDir, f);
+    try {
+      if (direction === "in") {   // the common copy wins; the first profile to have one seeds it
+        if (fs.existsSync(common)) { fs.mkdirSync(path.dirname(mine), { recursive: true }); fs.copyFileSync(common, mine); }
+        else if (fs.existsSync(mine)) { fs.mkdirSync(path.dirname(common), { recursive: true }); fs.copyFileSync(mine, common); }
+      } else if (fs.existsSync(mine)) { fs.mkdirSync(path.dirname(common), { recursive: true }); fs.copyFileSync(mine, common); }
+    } catch { /* a locked file: the next start tries again */ }
+  }
+}
+
 async function launch({ profile, auth, send = () => {}, onClose = () => {}, rejoin = null }) {
   const stage = (s, label, pct) => send({ type: "stage", stage: s, label, pct });
   stage("prepare", "Vorbereiten", 3);
   if (!LOADERS.includes(profile.loader)) throw new Error(`Unbekannter Loader ${profile.loader}`);
   fs.mkdirSync(modsDir(profile.id), { recursive: true });
+  try { linkShared(path.dirname(modsDir(profile.id)), profile.id); syncSharedFiles(path.dirname(modsDir(profile.id)), "in"); } catch (e) { send({ type: "log", line: "Gemeinsame Daten: " + e.message }); }
   await ensureJava(profile.mc, profile, send);
 
   stage("loader", `${profile.loader} prüfen`, 8);
@@ -618,7 +656,7 @@ async function launch({ profile, auth, send = () => {}, onClose = () => {}, rejo
     }
   };
   mclc.on("debug", onLine); mclc.on("data", onLine);
-  mclc.on("close", (code) => { stage("closed", code === 0 ? "Beendet" : `Beendet (Code ${code})`, 0); onClose(code); });
+  mclc.on("close", (code) => { try { syncSharedFiles(gameDir, "out"); } catch { /* next time */ } stage("closed", code === 0 ? "Beendet" : `Beendet (Code ${code})`, 0); onClose(code); });
 
   stage("files", "Dateien prüfen und laden", 40);
   const child = await mclc.launch({
@@ -633,4 +671,4 @@ async function launch({ profile, auth, send = () => {}, onClose = () => {}, rejo
   return { kill: () => child.kill() };
 }
 
-module.exports = { searchContent, addContent, ensureDeps, checkPack, updatePack, syncMods, updateRepo, buildFile, ROOT, LOADERS, FABRIC_API, readProfiles, writeProfiles, modsDir, manifest, versions, searchMods, addMod, removeMod, ensureFabricApi, installPreset, PRESET, searchPacks, installPack, ensureFabric, ensureInstalled, findJava, ensureJava, ensureRuntimes, launch, ramFor, DIST };
+module.exports = { searchContent, addContent, ensureDeps, checkPack, updatePack, syncMods, updateRepo, buildFile, ROOT, LOADERS, FABRIC_API, readProfiles, writeProfiles, modsDir, manifest, versions, searchMods, addMod, removeMod, ensureFabricApi, installPreset, PRESET, searchPacks, installPack, ensureFabric, ensureInstalled, findJava, ensureJava, ensureRuntimes, launch, linkShared, syncSharedFiles, SHARED, ramFor, DIST };

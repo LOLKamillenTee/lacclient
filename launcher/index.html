@@ -471,7 +471,9 @@ $("#pgo").onclick = () => searchPacks(); $("#pq").onkeydown = (e) => { if (e.key
 $("#m-imp").onclick = () => { $("#imsg").textContent = ""; modal("mimp"); };
 async function loadVersions() {
   $("#pver").innerHTML = "<option>lädt…</option>";
-  try { const v = await lac.versions(pLoader); $("#pver").innerHTML = v.slice(0, 80).map((x) => `<option>${esc(x)}</option>`).join(""); } catch (e) { $("#pver").innerHTML = ""; toast("Versionen nicht ladbar: " + clean(e)); }
+  try { const v = await lac.versions(pLoader); const hasLac = (x) => builds.some((b) => b.loader === pLoader && b.mc === x);
+    $("#pver").innerHTML = v.slice(0, 80).map((x) => `<option value="${esc(x)}">${esc(x)}${hasLac(x) ? " · mit LAC-Mod" : ""}</option>`).join("");
+    const hint = () => { $("#phint").textContent = hasLac($("#pver").value) ? "" : "Für diese Version gibt es den LAC-Mod noch nicht: das Profil startet ohne ihn."; }; $("#pver").onchange = hint; hint(); } catch (e) { $("#pver").innerHTML = ""; toast("Versionen nicht ladbar: " + clean(e)); }
   $("#phint").textContent = pLoader === "fabric" ? "Fabric API wird automatisch installiert." : "Der Loader wird beim ersten Start einmalig installiert.";
   $("#prow").style.display = pLoader === "fabric" ? "" : "none";
 }
