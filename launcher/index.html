@@ -263,8 +263,8 @@ Promise.all(["400 16px LacInter","600 16px LacInter","16px LacPoppins","16px Lac
    <tr><td>Badge und Name</td><td>weiß</td><td>Farben</td><td>Farben + Animationen</td><td>Farben + Animationen</td><td>alles, auch Rot und Feuer</td></tr>
    <tr><td>Chat-Farbton</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
    <tr><td>Profile und Modpacks</td><td>unbegrenzt</td><td>unbegrenzt</td><td>unbegrenzt</td><td>unbegrenzt</td><td>unbegrenzt</td></tr>
-   <tr><td>Cosmetics</td><td>Coins</td><td>Coins</td><td>alle außer Bundles</td><td>alle außer Bundles</td><td>alle</td></tr>
-   <tr><td>Bundles</td><td>per Aufgabe</td><td>per Aufgabe</td><td>per Aufgabe</td><td>per Aufgabe</td><td>alle</td></tr>
+   <tr><td>Cosmetics</td><td>Coins</td><td>Coins</td><td>alle außer Bundles</td><td>alle außer Dev-Cosmetics</td><td>alle</td></tr>
+   <tr><td>Bundles</td><td>per Aufgabe</td><td>per Aufgabe</td><td>per Aufgabe</td><td>alle</td><td>alle</td></tr>
    <tr><td>Pro-Capes</td><td>–</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
    <tr><td>Plus-Capes, Companions, Transform</td><td>–</td><td>–</td><td>✓</td><td>✓</td><td>✓</td></tr>
    <tr><td>7 Tage Plus verschenken</td><td>–</td><td>–</td><td>–</td><td>✓</td><td>–</td></tr>
@@ -683,8 +683,8 @@ function fxLoop() {
 const userName = () => ($("#uname").textContent === "Nicht angemeldet" ? "Dein Name" : $("#uname").textContent);
 const LEGACY_FX = { gradient: ["gradient"], rainbow: ["rainbow"], pulse: ["glowing"], glow: ["glowing"], shimmer: ["shimmer"], wave: ["waving"], twist: ["rainbow"] };
 const fancy = () => !!(me && (me.plus || me.pro || me.dev));
-const ownsItem = (id) => !!me && (me.dev || me.owned.includes(id) || (me.plus && !(cat.bundles || []).some((b) => b.items.includes(id))) || (cat.bundles || []).some((b) => b.items.includes(id) && (me.advances || []).includes(b.adv)));
-const bundleOpen = (b) => !!me && (me.dev || (me.advances || []).includes(b.adv));
+const ownsItem = (id) => !!me && (me.dev || me.creator || me.owned.includes(id) || (me.plus && !(cat.bundles || []).some((b) => b.items.includes(id))) || (cat.bundles || []).some((b) => b.items.includes(id) && (me.advances || []).includes(b.adv)));
+const bundleOpen = (b) => !!me && (me.dev || me.creator || (me.advances || []).includes(b.adv));
 const lvl = (xp) => 1 + Math.floor(Math.sqrt(Math.max(0, xp) / 40));
 const levelTitle = (l) => (l >= 50 ? "Legende" : l >= 25 ? "Veteran" : l >= 10 ? "Entdecker" : "");   // a name only, no rights
 const nameFxOf = (n) => n.effects || LEGACY_FX[n.effect] || [];

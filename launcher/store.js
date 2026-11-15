@@ -56,7 +56,7 @@ const isRed = (hex) => { const m = /^#([0-9a-f]{6})$/i.exec(hex || ""); if (!m) 
 const styleCheck = (d, c1, c2, effects) => { if (d.dev) return null; if (effects.includes("fire")) return "Feuer gibt es nur mit Dev-Rang"; if (effects.length && !P(d)) return "Animationen gibt es ab LAC+"; if (isRed(c1) || isRed(c2)) return "Rote Farben gibt es nur mit Dev-Rang"; return null; };
 const rankOk = (d, id) => { const r = item(id) && item(id).rank; return !r || d.dev || (r === "pro" ? d.pro || P(d) : r === "plus" && P(d)); };
 const inBundle = (id) => (catalog().bundles || []).some((b) => b.items.includes(id));   // bundle items need their achievement, LAC+ included
-const ownsBase = (d, id) => (item(id) && item(id).plus ? !!(P(d) || d.dev) : false) || (!(item(id) && item(id).plus) && (d.dev || d.owned.includes(id) || (P(d) && !inBundle(id)))) || (catalog().bundles || []).some((b) => b.items.includes(id) && (d.advances || []).includes(b.adv));
+const ownsBase = (d, id) => (item(id) && item(id).plus ? !!(P(d) || d.dev) : false) || (!(item(id) && item(id).plus) && (d.dev || d.creator || d.owned.includes(id) || (P(d) && !inBundle(id)))) || (catalog().bundles || []).some((b) => b.items.includes(id) && (d.advances || []).includes(b.adv));
 const owns = (d, id) => { const it = item(id); return it && it.rank ? rankOk(d, id) : ownsBase(d, id); };
 const item = (id) => catalog().items.find((i) => i.id === id);
 
