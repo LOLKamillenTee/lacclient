@@ -19,7 +19,7 @@ jobs:
       - run: node .github/scripts/sync-packs-gh.js packs
       - name: Commit
         run: |
-          git add -A packs
+          git add -A
           if git diff --cached --quiet; then echo "nothing changed"; exit 0; fi
           git -c user.name=LAC -c user.email=lac@users.noreply.github.com commit -q -m "Modpacks synced"
           git pull -q --rebase origin main
