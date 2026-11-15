@@ -370,7 +370,7 @@ ipcMain.handle("devlog:get", async () => {
   const r = await fetch(packs.base() + "/v1/devlog", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code }) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return j.log;
 });
-/** every 10 seconds: the role list of the sync service. A rank a Dev gave counts here too, and the screens refresh when it changed. */
+/** every 5 seconds: the role list of the sync service. A rank a Dev gave counts here too, and the screens refresh when it changed. */
 let rolesFirst = true;
 async function pollRoles() {
   try {
@@ -380,7 +380,7 @@ async function pollRoles() {
     rolesFirst = false;
   } catch { /* offline: next round */ }
 }
-setInterval(pollRoles, 10000); setTimeout(pollRoles, 3000);
+setInterval(pollRoles, 5000); setTimeout(pollRoles, 3000);
 ipcMain.handle("roles:get", async () => (await fetch(packs.base() + "/v1/roles", { signal: AbortSignal.timeout(10000) })).json());
 ipcMain.handle("roles:set", async (e, name, rank) => {
   const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
