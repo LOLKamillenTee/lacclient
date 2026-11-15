@@ -15,6 +15,7 @@ const core = require("./core");
 const store = require("./store");
 const share = require("./share");
 const packs = require("./packs");
+const discord = require("./discord");
 const skins = require("./skins");
 const os = require("os");
 
@@ -153,15 +154,16 @@ async function startProfile(profileId, tell, opts = {}) {
   try { fs.mkdirSync(core.ROOT, { recursive: true }); fs.writeFileSync(LOGFILE(), `LAC Launcher ${app.getVersion()} · ${new Date().toISOString()} · ${process.platform} ${os.release()} · Profil ${profile.name} (${profile.loader} ${profile.mc})\n`); } catch { /* see logLine */ }
   const send = (ev) => { if (ev.type === "log") logLine(ev.line); else if (ev.type === "stage") { logLine(`[${ev.stage}] ${ev.label}`); writeStatus({ stage: ev.stage, label: ev.label, pct: ev.pct || 0, name: profile.name }); } else if (ev.type === "pack") writeStatus({ stage: "pack", label: ev.title, pct: ev.total ? Math.round(100 * ev.done / ev.total) : 0 }); tell({ ...ev, pid: profileId }); };
   cancelFlag = false;
+  try { discord.launching(profile); } catch { /* presence is optional */ }
   let startedAt = 0, startedAtPlaced = false;
-  const watch = (ev) => { if (ev.type === "stage" && ev.stage === "running" && !startedAt) { startedAt = Date.now(); if (!startedAtPlaced) { startedAtPlaced = true; placeGame(); } if (opts.onRunning && !cancelFlag) try { opts.onRunning(); } catch { /* the other game is gone already */ } } send(ev); };
+  const watch = (ev) => { if (ev.type === "stage" && ev.stage === "running" && !startedAt) { startedAt = Date.now(); try { discord.playing(profile, startedAt); } catch { /* optional */ } if (!startedAtPlaced) { startedAtPlaced = true; placeGame(); } if (opts.onRunning && !cancelFlag) try { opts.onRunning(); } catch { /* the other game is gone already */ } } send(ev); };
   try { session.mclc = (await session.xbox.getMinecraft()).mclc(); } catch { /* token still fine or offline: use what we have */ }
   let self = { kill() {} }; current = self;   // reserve the slot while preparing
   try {
-    const h = await core.launch({ profile, rejoin: opts.rejoin || null, auth: session.mclc, send: watch, onClose: () => { if (startedAt) addPlaytime(profileId, Math.round((Date.now() - startedAt) / 1000)); const wasCurrent = current === self; if (wasCurrent) current = null; send({ type: "playtime" }); if (wasCurrent && !cancelFlag) { writeStatus({ stage: "closed", label: "", pct: 0 }); showLauncher(); } } });
+    const h = await core.launch({ profile, rejoin: opts.rejoin || null, auth: session.mclc, send: watch, onClose: () => { if (startedAt) addPlaytime(profileId, Math.round((Date.now() - startedAt) / 1000)); const wasCurrent = current === self; if (wasCurrent) { current = null; try { discord.idle(); } catch { /* optional */ } } send({ type: "playtime" }); if (wasCurrent && !cancelFlag) { writeStatus({ stage: "closed", label: "", pct: 0 }); showLauncher(); } } });
     self = h; current = h;
     if (cancelFlag) h.kill();
-  } catch (err) { if (current === self) current = null; logLine("FEHLER: " + (err && err.stack || err)); send({ type: "stage", stage: "error", label: err.message, pct: 0 }); throw err; }
+  } catch (err) { if (current === self) { current = null; try { discord.idle(); } catch { /* optional */ } } logLine("FEHLER: " + (err && err.stack || err)); send({ type: "stage", stage: "error", label: err.message, pct: 0 }); throw err; }
 }
 let cancelFlag = false;
 /** while the game restarts for mod changes, a LAC loading screen sits exactly where the game window was, so the window seems to stay open */
@@ -507,6 +509,7 @@ ipcMain.handle("profile:icon", async (_e, profileId) => {   // choose a picture,
 if (process.env.LAC_UISHOT) app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion,WinRetrieveSuggestionsOnlyOnDemand");   // test screenshots of a window nobody looks at
 app.commandLine.appendSwitch("enable-gpu-rasterization"); app.commandLine.appendSwitch("enable-zero-copy");
 app.whenReady().then(async () => {
+  try { discord.start(); } catch { /* optional */ }
   await silentLogin();
   const w = new BrowserWindow({ width: 1240, height: 780, minWidth: 980, minHeight: 640, backgroundColor: "#07070c", autoHideMenuBar: true, frame: false,
     icon: path.join(__dirname, "build", "icon.png"), title: "LAC Launcher",
