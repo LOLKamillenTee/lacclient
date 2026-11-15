@@ -45,11 +45,27 @@ async function establish(xbox) {
   writeSettings(st);
   return { uuid: session.uuid, name: session.name, online: true };
 }
+/** Only a real "no" from Microsoft ends the saved login. A slow or missing network at start (or a short outage) must not: that was why people had to sign in again after updates and restarts. */
+const rejected = (e) => /invalid_grant|AADSTS70000|AADSTS700082|AADSTS50173|AADSTS50078|expired|revoked|unauthorized|40[01]/i.test(String((e && e.message) || e));
+let silentRetry = null;
 async function silentLogin() {
   const st = readSettings();
   if (!st.refresh) return;
-  try { await establish(await new Auth("select_account").refresh(safeStorage.decryptString(Buffer.from(st.refresh, "base64")))); }
-  catch (e) { console.error("[lac] silent login failed, asking again next time:", e?.message || e); const { refresh, ...rest } = readSettings(); writeSettings(rest); }
+  let token; try { token = safeStorage.decryptString(Buffer.from(st.refresh, "base64")); } catch (e) { console.error("[lac] saved login cannot be read now, kept:", e?.message || e); return; }
+  const attempt = async () => { await establish(await new Auth("select_account").refresh(token)); };
+  for (let i = 0; i < 3; i++) {
+    try { await attempt(); return; }
+    catch (e) {
+      if (rejected(e)) { console.error("[lac] Microsoft refused the saved login:", e?.message || e); const { refresh, ...rest } = readSettings(); writeSettings(rest); return; }
+      console.error("[lac] silent login failed (network?), trying again:", e?.message || e);
+      await new Promise((r) => setTimeout(r, 2500 * (i + 1)));
+    }
+  }
+  // still no network: the login stays saved and is tried again every minute until it works
+  if (!silentRetry) silentRetry = setInterval(async () => {
+    try { await attempt(); clearInterval(silentRetry); silentRetry = null; try { tellWindow({ type: "rank", quiet: true }); } catch { /* window not ready */ } }
+    catch (e) { if (rejected(e)) { clearInterval(silentRetry); silentRetry = null; const { refresh, ...rest } = readSettings(); writeSettings(rest); } }
+  }, 60000);
 }
 ipcMain.handle("login", async () => establish(await new Auth("select_account").launch("electron")));
 // Sign-in with a code (Microsoft's own device flow, same app id as above): no e-mail or SMS code is needed when the browser is already signed in to Microsoft.
