@@ -365,6 +365,7 @@ ipcMain.handle("shots:list", () => {
   return out.slice(0, 24).map((o) => { let thumb = ""; try { thumb = nativeImage.createFromPath(o.file).resize({ width: 320 }).toDataURL(); } catch { /* no preview */ } return { ...o, thumb }; });
 });
 ipcMain.handle("shots:share", async (e, file) => {
+  throw new Error("tba (to be announced)");   // photos are not stored on the server for now
   if (!insideInstances(String(file))) throw new Error("Datei nicht erlaubt");
   const { nativeImage } = require("electron"), u = user(); if (!u) throw new Error("Bitte einmal mit Microsoft anmelden");
   let img = nativeImage.createFromPath(String(file)); if (img.isEmpty()) throw new Error("Bild nicht lesbar");
