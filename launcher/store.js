@@ -124,7 +124,7 @@ module.exports = {
     const it = item(id);
     return edit(uuid, (d) => {
       if (!it) return "Unbekannt"; if (!owns(d, id)) return "Gesperrt";
-      if (!Number.isInteger(chroma) || chroma < 0 || chroma >= (it.chroma ? catalog().chromas : 1)) return "Ungültige Farbe";
+      if (!Number.isInteger(chroma) || chroma < 0 || chroma > 6 || (chroma > 0 && chroma < 6 && !it.chroma) || (chroma === 6 && ["mount", "morph", "buddy"].includes(it.type))) return "Ungültige Farbe";   // 6 = white, for everything drawn from art
       d.equipped = d.equipped.filter((e) => item(e) && item(e).type !== it.type); d.equipped.push(id); d.chroma[id] = chroma;
     });
   },
