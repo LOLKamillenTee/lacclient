@@ -686,7 +686,16 @@ function serverCount(file) {
   try { const root = nbtRead(fs.readFileSync(file)), e = root.v.get("servers"); return e && e.t === 9 ? e.v.items.length : 0; } catch { return -1; }
 }
 /** copy that keeps the time of the source, so "which one is newer" stays true */
-function copyKeep(from, to) { fs.mkdirSync(path.dirname(to), { recursive: true }); fs.copyFileSync(from, to); try { const st = fs.statSync(from); fs.utimesSync(to, st.atime, st.mtime); } catch { /* time stays */ } }
+function copyKeep(from, to) {
+  fs.mkdirSync(path.dirname(to), { recursive: true });
+  let extra = "";   // options files: settings that only the target knows (a mod that is only in that profile) are kept and added, not wiped
+  if (/^options.*\.txt$/.test(path.basename(to)) && fs.existsSync(to)) try {
+    const keys = new Set(fs.readFileSync(from, "utf8").split(/\r?\n/).map((l) => l.split(":")[0]));
+    extra = fs.readFileSync(to, "utf8").split(/\r?\n/).filter((l) => l.includes(":") && !keys.has(l.split(":")[0])).join("\n");
+  } catch { /* plain copy */ }
+  fs.copyFileSync(from, to); if (extra) fs.appendFileSync(to, (fs.readFileSync(to, "utf8").endsWith("\n") ? "" : "\n") + extra + "\n");
+  try { const st = fs.statSync(from); fs.utimesSync(to, st.atime, st.mtime); } catch { /* time stays */ }
+}
 /** @param changedOnly (running game) only a file that is newer than the common copy goes out: every change of the settings reaches the other profiles within seconds */
 function syncSharedFiles(gameDir, direction, changedOnly) {
   fs.mkdirSync(SHARED(), { recursive: true });
