@@ -41,7 +41,10 @@ async function syncMods(send = () => {}) {
       if (!/^lac-[\w.-]+\.jar$/.test(b.file) || !/^[0-9a-f]{64}$/.test(b.sha256 || "")) continue;
       const dest = path.join(MODS(), b.file), bd = bundled().find((x) => x.file === b.file);
       if (fs.existsSync(dest) && sha256(dest) === b.sha256) continue;
-      if (bd && fs.existsSync(path.join(DIST, bd.file)) && sha256(path.join(DIST, bd.file)) === b.sha256) continue;   // the shipped build is already this one
+      if (bd && fs.existsSync(path.join(DIST, bd.file)) && sha256(path.join(DIST, bd.file)) === b.sha256) {   // the shipped build is already this one: an older downloaded copy must not win over it any more (it kept old mod builds alive after launcher updates)
+        const i = have.findIndex((x) => x.file === b.file); if (i >= 0) { try { fs.rmSync(dest, { force: true }); } catch { /* locked */ } have.splice(i, 1); n++; }
+        continue;
+      }
       send({ type: "log", line: `LAC-Mod ${b.file} wird aktualisiert` });
       const f = await fetch(base + b.file, { signal: AbortSignal.timeout(60000) }); if (!f.ok) continue;
       const buf = Buffer.from(await f.arrayBuffer());
