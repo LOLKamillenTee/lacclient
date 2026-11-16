@@ -7,7 +7,7 @@ process.on("uncaughtException", (e) => { if (e && (e.code === "EPIPE" || /EPIPE/
 // only one launcher window ever: a second start (also the game starting the launcher for a request) just brings the first to the front
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
-app.on("second-instance", () => { if (mainWin) { if (mainWin.isMinimized()) mainWin.restore(); mainWin.show(); mainWin.focus(); } });
+app.on("second-instance", () => { /* the launcher never pulls itself to the front */ });
 const fs = require("fs");
 const path = require("path");
 const { Auth } = require("msmc");
@@ -189,7 +189,7 @@ function showSplash(win) {
   closeSplash();
   try {
     const { screen } = require("electron"), b = Array.isArray(win) && win.length === 4 && win.every(Number.isFinite) ? { x: win[0], y: win[1], width: win[2], height: win[3] } : screen.getPrimaryDisplay().bounds;
-    splash = new BrowserWindow({ ...b, frame: false, alwaysOnTop: true, skipTaskbar: true, resizable: false, movable: false, backgroundColor: "#0B0F1E", show: false, focusable: false });
+    splash = new BrowserWindow({ ...b, frame: false, alwaysOnTop: false, focusable: false, skipTaskbar: true, resizable: false, movable: false, backgroundColor: "#0B0F1E", show: false, focusable: false });
     splash.loadFile("splash.html"); splash.once("ready-to-show", () => { try { splash.showInactive(); } catch { /* closed */ } });
   } catch { splash = null; }
 }
@@ -197,7 +197,7 @@ const splashText = (t) => { try { splash && splash.webContents.executeJavaScript
 const closeSplash = () => { try { splash && splash.destroy(); } catch { /* gone */ } splash = null; };
 /** the launcher steps out of the way (minimized) while the game runs; it comes back when the game closes */
 function placeGame() { if (mainWin && readSettings().keepLauncher !== true) try { mainWin.minimize(); } catch { /* window closed */ } }
-const showLauncher = () => { try { if (mainWin) { if (mainWin.isMinimized()) mainWin.restore(); mainWin.show(); mainWin.focus(); } } catch { /* window closed */ } };
+const showLauncher = () => { /* on purpose empty: the launcher never comes to the front by itself */ };
 const writeStatus = (o) => { try { fs.writeFileSync(path.join(core.ROOT, "status.json"), JSON.stringify({ ...o, t: Date.now() })); } catch { /* the game just shows no details */ } };
 const tellWindow = (ev) => { try { mainWin && mainWin.webContents.send("launch", ev); } catch { /* window closed */ } };
 ipcMain.handle("launch", (e, profileId) => startProfile(profileId, (ev) => e.sender.send("launch", ev)));

@@ -728,7 +728,8 @@ function renderBundles() {
   $("#bcnt").textContent = `${open} / ${list.length} freigeschaltet`;
   $("#bgrid").innerHTML = list.map((b) => { const ok = bundleOpen(b), items = b.items.map((id) => cat.items.find((i) => i.id === id)).filter(Boolean);
     return `<div class="bun ${ok ? "ok" : "lockd"}"><div class="row"><b class="grow">${esc(b.name)}</b><span class="${ok ? "ok" : "mut"}" style="font-size:12px">${ok ? "Freigeschaltet" : "Aufgabe: " + esc(b.advText)}</span></div>
-      <div class="imgs">${items.map((i) => `<img src="previews/${i.id}.png" title="${esc(i.name)}" alt="">`).join("")}</div>${ok ? `<button class="btn p sm" data-eqb="${b.id}" style="margin-top:10px">Ausrüsten</button>` : ""}</div>`; }).join("");
+      <div class="imgs">${items.map((i) => MODEL_TYPES.includes(i.type) ? `<img data-mt="${i.id}|0" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" title="${esc(i.name)}" alt="">` : `<img src="previews/${i.id}.png" title="${esc(i.name)}" alt="">`).join("")}</div>${ok ? `<button class="btn p sm" data-eqb="${b.id}" style="margin-top:10px">Ausrüsten</button>` : ""}</div>`; }).join("");
+  fillModelThumbs($("#bgrid"));   // the bundle's pieces as 3D models (no screenshots)
   $$("[data-eqb]").forEach((x) => x.onclick = guard(async () => { const b = list.find((y) => y.id === x.dataset.eqb); for (const t of cat.types) me = await lac.unequip(t.id); const seen = new Set(); for (const id of b.items) { const it = cat.items.find((i) => i.id === id); if (!it || seen.has(it.type)) continue; seen.add(it.type); me = await lac.equip(id, 0); } toast(b.name + " angelegt", true); await loadMe(); }));
 }
 
