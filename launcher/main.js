@@ -206,6 +206,7 @@ ipcMain.handle("launch:kill", () => { current?.kill(); });
 
 /* ---------- sync service address (read by the game's LacRemote) ---------- */
 const SYNCFILE = () => path.join(core.ROOT, "sync.url");
+try { if (/lac-sync\.lacclient\.workers\.dev/.test(fs.readFileSync(SYNCFILE(), "utf8"))) fs.rmSync(SYNCFILE(), { force: true }); } catch { /* none set */ }   // an address saved while the service ran on Cloudflare: the default (the new server) is used again
 /* ---------- skin changer: Mojang's API, the token never leaves this process except to Mojang ---------- */
 const mcToken = async () => {
   if (!session) throw new Error("Zum Ändern des Skins bitte mit Microsoft anmelden");

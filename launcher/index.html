@@ -412,7 +412,7 @@ $("#faddgo").onclick = guard(async () => { const r = await lac.friendAdd($("#fad
 /* ---------- dev: roles of players ---------- */
 async function renderRoles(map) {
   try { map = map || await lac.roles(); } catch (e) { toast(clean(e)); return; }
-  const l = Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
+  const l = Object.values(map).map((r) => ({ ...r, name: String(r.name || r.uuid || "?"), rank: String(r.rank || "free") })).sort((a, b) => a.name.localeCompare(b.name));   // an entry without a name must not break the list
   $("#rlist").innerHTML = l.map((r) => `<div class="frow" data-rn="${esc(r.name)}" style="cursor:pointer"><b class="grow">${esc(r.name)}</b><span class="${r.rank === "dev" ? "gold" : "ok"}">${r.rank === "creator" ? "Founder" : r.rank[0].toUpperCase() + r.rank.slice(1)}</span></div>`).join("") || '<span class="mut">Noch keine Rollen vergeben</span>';
   $$("[data-rn]").forEach((x) => x.onclick = () => { $("#rname").value = x.dataset.rn; });
 }
