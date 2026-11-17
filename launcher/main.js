@@ -384,6 +384,14 @@ ipcMain.handle("codes:make", async (_e, rank, count) => {   // every Dev may mak
   const r = await fetch(packs.base() + "/v1/codes", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(15000), body: JSON.stringify({ code, rank, count: Math.max(1, Math.min(20, count | 0)), by: user() && user().name }) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return j.codes;
 });
+ipcMain.handle("founder:get", async () => {   // is the Founder program on (the sync service decides)
+  try { const r = await fetch(packs.base() + "/v1/founder", { signal: AbortSignal.timeout(8000) }); return !!(await r.json()).on; } catch { return false; }
+});
+ipcMain.handle("founder:set", async (_e, on) => {   // a Dev switches it
+  const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
+  const r = await fetch(packs.base() + "/v1/founder", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code, on: !!on, by: "Launcher" }) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return !!j.on;
+});
 ipcMain.handle("devlog:get", async () => {
   const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
   const r = await fetch(packs.base() + "/v1/devlog", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code }) });

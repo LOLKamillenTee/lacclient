@@ -141,6 +141,10 @@ Promise.all(["400 16px LacInter","600 16px LacInter","16px LacPoppins","16px Lac
 <main>
 
 <section class="page on" id="play">
+ <a class="hnews rise" id="hnews" style="--i:0" role="button" tabindex="0">
+  <div class="hntxt"><span class="hnk">Founder-Programm</span><b>Werde Teil des Founder-Programms</b><small>Hol dir den Founder-Rang mit allen LAC+ Cosmetics, Auren und Flügeln.</small></div>
+  <div class="hnrow"><img src="previews/wings_dragon.png" alt=""><img src="previews/aura_phoenix.png" alt=""><img src="previews/cape_blackhole.png" alt=""></div>
+ </a>
  <div class="hbg"><div class="aur a1"></div><div class="aur a2"></div><div class="hpic" id="hpic"></div><div class="hshade"></div></div>
  <div class="hl">
   <div class="hkick rise" style="--i:0"><i></i><span id="hkick">LAC Client</span></div>
@@ -248,6 +252,7 @@ Promise.all(["400 16px LacInter","600 16px LacInter","16px LacPoppins","16px Lac
 <section class="page" id="shots"><h2>Fotos</h2><p class="sub">Deine neuesten Screenshots aus allen Profilen. </p><div class="shgrid" id="shgrid"></div></section>
 <section class="page" id="dev"><h2>Dev: Spieler und Rollen</h2><p class="sub">Name eintragen, Rang wählen. Gilt sofort für alle LAC-Spieler.</p>
  <div class="card" style="max-width:560px;margin-bottom:16px"><div class="row" style="gap:8px;flex-wrap:wrap"><input id="rname" placeholder="Minecraft-Name" style="width:200px"><button class="btn sm" data-rk="free">Free</button><button class="btn sm" data-rk="pro">Pro</button><button class="btn sm" data-rk="plus">Plus</button><button class="btn sm" data-rk="creator">Founder</button><button class="btn sm" data-rk="dev">Dev</button><button class="btn d sm" data-rk="remove">Entfernen</button></div></div>
+ <div class="card" style="max-width:560px;margin-bottom:16px"><h3>Founder-Programm</h3><p class="mut" style="margin-top:0">Wenn an, bekommt jeder, der den Founder-Code von der Play-Seite einlöst, den Founder-Rang für immer. Aus: niemand kann ihn mehr einlösen, wer ihn schon hat, behält ihn.</p><label class="row" style="gap:10px;cursor:pointer"><input type="checkbox" id="fndon"><span id="fndst" class="mut">Wird geladen…</span></label></div>
  <div class="card" style="max-width:560px;margin-bottom:16px"><h3>Einmal-Codes erzeugen</h3><p class="mut" style="margin-top:0">Jeder Code gilt für ein Konto und nur einmal, der Rang bleibt dauerhaft. Gib die Codes weiter, sie werden hier nur jetzt angezeigt.</p>
   <div class="row" style="gap:8px;flex-wrap:wrap"><select id="cmrank"><option value="plus">LAC+</option><option value="pro">LAC Pro</option><option value="creator">Founder</option></select><input id="cmcount" type="number" min="1" max="20" value="1" style="width:80px"><button class="btn p" id="cmmake">Erzeugen</button><button class="btn" id="cmcopy" style="display:none">Kopieren</button></div>
   <textarea id="cmout" readonly rows="4" style="width:100%;margin-top:10px;display:none"></textarea></div>
@@ -850,8 +855,14 @@ function renderCos() {
 }
 
 /* ---------- LAC+ / badge ---------- */
+const FOUNDER_CODE = "FND-CPWR-3DLZ-2YA7-P4JP";   // the one reusable Founder code (random on purpose); a Dev switches the program on and off, the sync service checks it
+$("#hnews").onclick = () => { document.querySelector('nav button[data-p="plus"]').click(); $("#code").value = FOUNDER_CODE; $("#rmsg").textContent = "Founder-Code eingetragen: klicke auf Einlösen"; $("#redeem").focus(); };
+$("#hnews").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") $("#hnews").click(); };
 $("#redeem").onclick = guard(async () => { me = await lac.redeem($("#code").value); $("#rmsg").innerHTML = '<span class="ok">Code eingelöst!</span>'; $("#code").value = ""; await loadMe(); });
 const devLogLoad = guard(async () => { const log = await lac.devLog(); $("#devloglist").innerHTML = log.length ? log.map((e) => `<div style="padding:3px 0;border-bottom:1px solid var(--line)"><span class="mut">${new Date(e.t).toLocaleString()}</span> · <b>${esc(e.by)}</b> ${esc(e.what)}</div>`).join("") : "Noch nichts."; });
+const fndLoad = async () => { try { const on = await lac.founderGet(); $("#fndon").checked = on; $("#fndst").textContent = on ? "An: jeder kann den Founder-Rang einlösen" : "Aus: der Code wird abgelehnt"; } catch { $("#fndst").textContent = "Status nicht lesbar"; } };
+$("#fndon").onchange = guard(async () => { const on = await lac.founderSet($("#fndon").checked); $("#fndon").checked = on; $("#fndst").textContent = on ? "An: jeder kann den Founder-Rang einlösen" : "Aus: der Code wird abgelehnt"; toast(on ? "Founder-Programm eingeschaltet" : "Founder-Programm ausgeschaltet", true); });
+document.querySelector('nav button[data-p="dev"]').addEventListener("click", fndLoad);
 $("#dlrefresh").onclick = devLogLoad; document.querySelector('nav button[data-p="dev"]').addEventListener("click", devLogLoad);
 $("#cmmake").onclick = guard(async () => { const codes = await lac.makeCodes($("#cmrank").value, +$("#cmcount").value || 1); const o = $("#cmout"); o.value = codes.join("\n"); o.style.display = "block"; $("#cmcopy").style.display = ""; });
 $("#cmcopy").onclick = () => { navigator.clipboard.writeText($("#cmout").value).then(() => toast("Kopiert", true)).catch(() => { $("#cmout").select(); }); };

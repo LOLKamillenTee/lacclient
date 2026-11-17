@@ -84,6 +84,12 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:rgba(124,92,255,.
 .rise{opacity:0;animation:rise .9s var(--ease) both;animation-delay:calc(var(--i,0)*80ms + 120ms)}
 @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
 .hl{position:absolute;left:96px;top:50%;transform:translateY(-54%);width:min(560px,52%)}
+.hnews{position:absolute;left:96px;top:76px;width:min(560px,52%);height:128px;display:flex;align-items:stretch;border-radius:18px;overflow:hidden;cursor:pointer;background:#0f1124 url(founder.png) center/cover;border:1px solid var(--hair);box-shadow:0 18px 50px rgba(60,40,160,.25);transition:transform .25s,border-color .25s;z-index:2}
+.hnews:hover{transform:translateY(-2px);border-color:#7c5cff}.hnews:focus-visible{outline:2px solid #7c5cff}
+.hntxt{display:flex;flex-direction:column;justify-content:center;gap:4px;padding:16px 18px;flex:1;min-width:0;background:linear-gradient(90deg,rgba(10,10,26,.94),rgba(10,10,26,.6) 70%,transparent)}
+.hnk{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#ffd24a;font-weight:700}.hntxt b{font-size:18px;line-height:1.2}.hntxt small{color:#b9bdd8;font-size:12px;line-height:1.35}
+.hnrow{display:flex;gap:2px;align-items:center;padding-right:10px}.hnrow img{width:58px;height:44px;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+@media (max-height:740px){.hnews{display:none}}
 .hkick{display:inline-flex;align-items:center;gap:9px;padding:7px 14px;border-radius:999px;background:var(--glass);border:1px solid var(--hair);font-size:11px;letter-spacing:.14em;font-weight:600;color:#c4c4dc;text-transform:uppercase}
 .hkick i{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
 #htitle{font-size:clamp(46px,6.6vw,92px);font-weight:800;letter-spacing:-.035em;line-height:.94;margin:20px 0 16px;text-transform:uppercase;overflow-wrap:anywhere;background:linear-gradient(180deg,#fff,#c9c9e6);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -172,7 +178,7 @@ aside.rail{width:204px;left:14px;top:14px;bottom:14px;padding:14px 10px;align-it
 @media (max-height:720px){.rail nav button,.rail nav button.cx{height:32px}.rind{height:32px}.rhead{margin-top:8px}}
 header.top{left:238px}
 main{padding:80px 30px 32px 246px}
-.hl{left:250px}.hfoot{left:250px}
+.hl{left:250px}.hfoot{left:250px}.hnews{left:250px}
 #hnew{display:none}
 @media (max-width:1180px){.hl{width:48%}}
 .rail nav button,.rail nav button.cx{flex-direction:row!important;text-align:left;font-size:13.5px}
