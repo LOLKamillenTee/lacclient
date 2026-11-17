@@ -688,12 +688,18 @@ function serverCount(file) {
 /** copy that keeps the time of the source, so "which one is newer" stays true */
 function copyKeep(from, to) {
   fs.mkdirSync(path.dirname(to), { recursive: true });
-  let extra = "";   // options files: settings that only the target knows (a mod that is only in that profile) are kept and added, not wiped
-  if (/^options.*\.txt$/.test(path.basename(to)) && fs.existsSync(to)) try {
-    const keys = new Set(fs.readFileSync(from, "utf8").split(/\r?\n/).map((l) => l.split(":")[0]));
-    extra = fs.readFileSync(to, "utf8").split(/\r?\n/).filter((l) => l.includes(":") && !keys.has(l.split(":")[0])).join("\n");
+  /* Options files (options.txt, optionsof.txt ...) are merged, never just replaced: the values of the source win, a setting that only the target knows (a mod that is only in that profile) is kept,
+     and the "version:" line of the target stays (every Minecraft version numbers its options itself). So the common copy holds every setting of every version, and a profile of an older
+     version simply takes the values it knows from it. */
+  if (/^options.*\.txt$/.test(path.basename(to))) try {
+    const key = (l) => l.split(":")[0], keep = (l) => l.includes(":") && !l.startsWith("version:");
+    const src = fs.readFileSync(from, "utf8").split(/\r?\n/).filter(keep), keys = new Set(src.map(key));
+    const own = !fs.existsSync(to) ? [] : fs.readFileSync(to, "utf8").split(/\r?\n/).filter((l) => l.includes(":") && !keys.has(key(l)));
+    fs.writeFileSync(to, src.concat(own).join("\n") + "\n");
+    try { const st = fs.statSync(from); fs.utimesSync(to, st.atime, st.mtime); } catch { /* time stays */ }
+    return;
   } catch { /* plain copy */ }
-  fs.copyFileSync(from, to); if (extra) fs.appendFileSync(to, (fs.readFileSync(to, "utf8").endsWith("\n") ? "" : "\n") + extra + "\n");
+  fs.copyFileSync(from, to);
   try { const st = fs.statSync(from); fs.utimesSync(to, st.atime, st.mtime); } catch { /* time stays */ }
 }
 /** @param changedOnly (running game) only a file that is newer than the common copy goes out: every change of the settings reaches the other profiles within seconds */
