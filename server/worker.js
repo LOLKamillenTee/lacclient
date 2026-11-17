@@ -14,6 +14,7 @@ import ITEMS from "./catalog-ids.json" with { type: "json" };
 const DEV_HASH = "e571ebc85c3c49cebaf117e556f1edfa653a47abf878ba2dbdcf40f1e3d1808f";   // sha256 of "lac-code:" + the Dev code
 const FOUNDER_HASH = "cf67fd4f55b06fdc200475c2432f1b78b8a8f3a7128423c39b12fc6d7117ecce";   // sha256 of "lac-code:" + the Founder program code: one reusable code, only valid while a Dev has the program switched on
 const PRO_HASH = "d3dd9ca618d84642e0e01f81f6a8d4ecf9934db3ee524ffe306d391c733279f3", PLUS_HASH = "6579677e08cee86e29cb6c97bfe05ecd9bf1ef996f397955073cbc0e90901d71";
+const OLD_ASKED = new Map();   // player id -> when the old service may be asked about him again
 const ORDER = ["free", "pro", "plus", "creator", "dev"];   // Creator: everything LAC+ gives, no Dev tools
 const PLUS_ONLY = new Set(ITEMS.filter((i) => i.type === "morph" || i.type === "buddy" || i.type === "mount" || i.plus).map((i) => i.id));
 const RANK_ITEM = new Map(ITEMS.filter((i) => i.rank).map((i) => [i.id, i.rank]));   // cosmetics only one rank may wear (Dev may wear all)
@@ -434,6 +435,18 @@ export default {
         if (!got["p:" + id]) continue;
         const given = roles[id] && roles[id].rank, own = got["rk:" + id], rank = ORDER.includes(given) ? given : ORDER.includes(own) ? own : "free";   // the same decision as authRank
         { const stored = JSON.parse(got["p:" + id]); out[id] = enforce(stored, rank); out[id].age = stored.seen ? Date.now() - stored.seen : -1; }   // age in ms: the game only shows players seen lately
+      }
+      // While players still have clients that report to the old service (env.FALLBACK, set only on the own server): what is missing or stale here is asked for there, at most every 2 minutes per player
+      if (env.FALLBACK) {
+        const now = Date.now(), ask = ids.filter((id) => (!out[id] || out[id].age < 0 || out[id].age > 600000) && !(OLD_ASKED.get(id) > now));
+        if (ask.length) {
+          for (const id of ask) OLD_ASKED.set(id, now + 120000);
+          try {
+            const r = await fetch(env.FALLBACK + "/v1/profiles?ids=" + ask.join(","), { signal: AbortSignal.timeout(4000) });
+            if (r.ok) { const old = await r.json(); for (const id of Object.keys(old)) if (old[id] && old[id].age >= 0 && (!out[id] || out[id].age < 0 || old[id].age < out[id].age)) out[id] = old[id]; }
+          } catch { /* the old service is not needed for this */ }
+          if (OLD_ASKED.size > 5000) for (const [k, v] of OLD_ASKED) if (v < now) OLD_ASKED.delete(k);
+        }
       }
       return json(out, 200, { "cache-control": "no-store" });
     }

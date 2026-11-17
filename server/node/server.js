@@ -31,7 +31,7 @@ const storage = {
   async put(k, v) { stPut.run(String(k), JSON.stringify(v)); },
   async list({ prefix = "" } = {}) { const m = new Map(); for (const r of stAll.all()) if (r.k.startsWith(prefix)) m.set(r.k, JSON.parse(r.v)); return m; },
 };
-const env = { LAC };
+const env = { LAC, FALLBACK: (process.env.FALLBACK_URL || "").replace(/\/+$/, "") };
 const hub = new FriendsHub({ storage }, env);
 env.HUB = { idFromName: (n) => n, get: () => ({ fetch: (req) => hub.fetch(req) }) };   // one global instance, in this process
 
