@@ -1,0 +1,26 @@
+name = "lac-sync"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# run once:  npx wrangler kv namespace create LAC   and paste the printed id below
+[[kv_namespaces]]
+binding = "LAC"
+id = "31967ce05f394e4fb5b0dac91afd3893"
+
+# friends: presence and chat relay
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "FriendsHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["FriendsHub"]
+
+# hosted worlds: relay rooms
+[[durable_objects.bindings]]
+name = "RELAY"
+class_name = "Relay"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Relay"]

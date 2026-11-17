@@ -5,6 +5,7 @@ import http from "node:http";
 import Database from "better-sqlite3";
 import worker from "../worker.js";
 import { FriendsHub } from "../hub.js";
+import { attachRelay } from "./relay-node.js";
 
 const db = new Database(process.env.DB || "./lac.db");
 db.pragma("journal_mode = WAL"); db.pragma("synchronous = NORMAL");
@@ -17,11 +18,18 @@ const LAC = {
   async get(k) { const r = kvGet.get(String(k)); if (!r) return null; if (r.exp && r.exp < Date.now()) { kvDel.run(String(k)); return null; } return r.v; },
   async put(k, v, o) { kvPut.run(String(k), String(v), o && o.expirationTtl ? Date.now() + o.expirationTtl * 1000 : null); },
   async delete(k) { kvDel.run(String(k)); },
+  /** KV list: keys in order, `cursor` = the last key of the previous page */
+  async list({ prefix = "", cursor, limit = 1000 } = {}) {
+    const rows = db.prepare("SELECT k FROM kv WHERE k >= ? AND (exp IS NULL OR exp >= ?) AND substr(k, 1, ?) = ? AND k > ? ORDER BY k LIMIT ?").all(prefix, Date.now(), prefix.length, prefix, cursor || "", limit + 1);
+    const more = rows.length > limit; if (more) rows.pop();
+    return { keys: rows.map((r) => ({ name: r.k })), list_complete: !more, cursor: more ? rows[rows.length - 1].k : undefined };
+  },
 };
 /** Durable Object storage as the hub uses it: values of any JSON shape */
 const storage = {
   async get(k) { const r = stGet.get(String(k)); return r ? JSON.parse(r.v) : undefined; },
   async put(k, v) { stPut.run(String(k), JSON.stringify(v)); },
+  async list({ prefix = "" } = {}) { const m = new Map(); for (const r of stAll.all()) if (r.k.startsWith(prefix)) m.set(r.k, JSON.parse(r.v)); return m; },
 };
 const env = { LAC };
 const hub = new FriendsHub({ storage }, env);
@@ -42,5 +50,6 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(r.status, h); res.end(out);
   } catch (e) { console.error(e); res.writeHead(500, { "content-type": "application/json" }); res.end(JSON.stringify({ error: "Serverfehler" })); }
 });
+attachRelay(server, LAC);
 server.listen(Number(process.env.PORT || 8787), "127.0.0.1", () => console.log("LAC sync service on 127.0.0.1:" + (process.env.PORT || 8787)));
 process.on("SIGTERM", () => { try { db.close(); } catch { /* closed */ } process.exit(0); });

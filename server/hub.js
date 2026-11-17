@@ -169,6 +169,7 @@ export class FriendsHub {
     if (new URL(req.url).pathname === "/live") {   // the "live" instance: profiles, ranks and roles, read and written in one place so a change is seen everywhere at once
       if (body.op === "get" && Array.isArray(body.keys)) { const v = {}; await Promise.all(body.keys.slice(0, 400).map(async (k) => { v[k] = await this.storage.get(String(k)); })); return Response.json({ v }); }
       if (body.op === "put" && typeof body.key === "string" && typeof body.value === "string" && body.value.length < 20000) { await this.storage.put(body.key, body.value); return Response.json({ ok: true }); }
+      if (body.op === "scan" && typeof body.prefix === "string") { const m = await this.storage.list({ prefix: body.prefix }); return Response.json({ keys: [...m.keys()].map((k) => k.slice(body.prefix.length)) }); }   // the ids behind a key prefix (the Dev player list)
       if (body.op === "dump") { const m = await this.storage.list(); return Response.json({ items: [...m].map(([k, v]) => [k, v]) }); }   // for moving to another host (worker.js /v1/admin/dump)
       return Response.json({ error: "ungültig" }, { status: 400 });
     }

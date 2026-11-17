@@ -7,10 +7,12 @@
 //     client to upload for a UUID claims it with a random secret key; later uploads must present the same key.
 import { sanitize, dashless, validUuid } from "./logic.js";
 export { FriendsHub } from "./hub.js";
+export { Relay } from "./relay.js";
 import { listPacks, getPack, getIcon, publish, removePack } from "./packs.js";
 import ITEMS from "./catalog-ids.json" with { type: "json" };
 
 const DEV_HASH = "e571ebc85c3c49cebaf117e556f1edfa653a47abf878ba2dbdcf40f1e3d1808f";   // sha256 of "lac-code:" + the Dev code
+const FOUNDER_HASH = "cf67fd4f55b06fdc200475c2432f1b78b8a8f3a7128423c39b12fc6d7117ecce";   // sha256 of "lac-code:" + the Founder program code: one reusable code, only valid while a Dev has the program switched on
 const PRO_HASH = "d3dd9ca618d84642e0e01f81f6a8d4ecf9934db3ee524ffe306d391c733279f3", PLUS_HASH = "6579677e08cee86e29cb6c97bfe05ecd9bf1ef996f397955073cbc0e90901d71";
 const ORDER = ["free", "pro", "plus", "creator", "dev"];   // Creator: everything LAC+ gives, no Dev tools
 const PLUS_ONLY = new Set(ITEMS.filter((i) => i.type === "morph" || i.type === "buddy" || i.type === "mount" || i.plus).map((i) => i.id));
@@ -188,19 +190,19 @@ export default {
 
       const proven = await mojangProof(String(body.name || ""), String(body.serverId || ""));
       if (proven && proven !== claimed) return json({ error: "Mojang bestätigt eine andere UUID" }, 403);
+      const owner = await env.LAC.get("k:" + claimed);   // read once: also decides below whether the claim must be written at all
       if (!proven) {   // trust on first use
-        const owner = await env.LAC.get("k:" + claimed);
         if (owner && owner !== keyHash) return json({ error: "Dieses Profil wurde schon von einem anderen Gerät beansprucht" }, 403);
       }
-      const last = Number(await env.LAC.get("r:" + claimed) || 0);
+      const last = Number(await lget(env, "r:" + claimed) || 0);   // the rate marker lives in the Durable Object: no KV write per upload
       if (Date.now() - last < 2000) return json({ error: "zu schnell" }, 429);   // at most one upload every 2 s per player
       const clean = sanitize(body.profile, ITEMS);
       if (!clean) return json({ error: "Profil ungültig" }, 400);
-      await env.LAC.put("r:" + claimed, String(Date.now()), { expirationTtl: 60 });         // KV keeps keys at least 60 s; the value holds the time
-      await env.LAC.put("k:" + claimed, keyHash, { expirationTtl: 180 * 86400 });          // the claim (renewed by every upload)
+      await lput(env, "r:" + claimed, String(Date.now()));                                   // in the Durable Object, not in KV (KV allows only 1000 writes a day)
+      if (owner !== keyHash) await env.LAC.put("k:" + claimed, keyHash, { expirationTtl: 180 * 86400 });   // the claim is written once, not by every upload
       const roles = JSON.parse((await lget(env, "roles")) || "{}");
       clean.rank = await authRank(env, claimed, roles);   // whatever rank the client claims is ignored
-      { const e = enforce(clean, clean.rank); e.seen = Date.now(); await lput(env, "p:" + claimed, JSON.stringify(e)); }   // seen: when this player was last in the game with LAC
+      { const e = enforce(clean, clean.rank); e.seen = Date.now(); if (/^[A-Za-z0-9_]{1,16}$/.test(String(body.name || ""))) e.name = String(body.name); await lput(env, "p:" + claimed, JSON.stringify(e)); }   // seen: when this player was last in the game with LAC
       return json({ ok: true, verified: !!proven });
     }
 
@@ -237,6 +239,49 @@ export default {
       await devlog(env, b.by, `${out.length} Code(s) für ${b.rank} erzeugt`);
       return json({ ok: true, rank: b.rank, codes: out });
     }
+    // Hosted worlds without a server or an open port: both sides connect out to a relay room (see relay.js). Only a LAC account (device key) may use it, the room name is the secret.
+    if (url.pathname === "/v1/relay") {
+      if (req.headers.get("upgrade") !== "websocket") return json({ error: "WebSocket nötig" }, 426);
+      const room = url.searchParams.get("room") || "";
+      if (!/^[A-Za-z0-9_-]{16,64}$/.test(room)) return json({ error: "Raum ungültig" }, 400);
+      const rid = dashless(req.headers.get("x-lac-uuid") || ""), rkey = req.headers.get("x-lac-key") || "";
+      if (!validUuid(rid) || !/^[0-9a-f]{32,128}$/.test(rkey)) return json({ error: "ungültig" }, 400);
+      const owner = await env.LAC.get("k:" + rid); if (!owner || owner !== (await sha256(rkey))) return json({ error: "Profil gehört einem anderen Gerät" }, 403);
+      return env.RELAY.get(env.RELAY.idFromName(room)).fetch(req);
+    }
+    // The Founder program: whoever enters the one reusable Founder code gets the Creator rank ("Founder") for good, as long as a Dev has the program switched on (GET = is it on).
+    if (url.pathname === "/v1/founder") {
+      if (req.method === "GET") return json({ on: (await lget(env, "founder")) === "1" });
+      if (req.method === "POST") {
+        const text = await req.text(); if (text.length > 512) return json({ error: "zu groß" }, 413);
+        let b; try { b = JSON.parse(text); } catch { return json({ error: "kein JSON" }, 400); }
+        if (typeof b.code !== "string" || (await sha256("lac-code:" + b.code)) !== DEV_HASH) return json({ error: "kein Dev-Rang" }, 403);
+        await lput(env, "founder", b.on ? "1" : "0"); await devlog(env, b.by, `Founder-Programm ${b.on ? "eingeschaltet" : "ausgeschaltet"}`);
+        return json({ ok: true, on: !!b.on });
+      }
+    }
+    // The Dev list of everybody who ever had the client open (any rank, free too): every account that claimed a key or uploaded a profile. Names come from the profile upload,
+    // the roles the Devs gave, or (at most 25 per call, then remembered) from Mojang.
+    if (url.pathname === "/v1/players" && req.method === "POST") {
+      const text = await req.text(); if (text.length > 512) return json({ error: "zu groß" }, 413);
+      let b; try { b = JSON.parse(text); } catch { return json({ error: "kein JSON" }, 400); }
+      if (typeof b.code !== "string" || (await sha256("lac-code:" + b.code)) !== DEV_HASH) return json({ error: "kein Dev-Rang" }, 403);
+      const ids = new Set(); let cursor;
+      do { const l = await env.LAC.list({ prefix: "k:", cursor, limit: 1000 }); for (const k of l.keys) ids.add(k.name.slice(2)); cursor = l.list_complete ? undefined : l.cursor; } while (cursor);
+      if (env.HUB) for (const pre of ["p:", "u:"]) { try { for (const k of (await liveCall(env, { op: "scan", prefix: pre })).keys || []) ids.add(k); } catch { /* the others are enough */ } }
+      const all = [...ids].filter(validUuid), roles = JSON.parse((await lget(env, "roles")) || "{}"), recs = {}, names = {};
+      for (let i = 0; i < all.length; i += 300) { const chunk = all.slice(i, i + 300); Object.assign(recs, await lgetMany(env, chunk.map((x) => "p:" + x))); Object.assign(names, await lgetMany(env, chunk.map((x) => "n:" + x))); }
+      let lookups = 0; const players = [];
+      for (const id of all) {
+        let rec = {}; try { rec = JSON.parse(recs["p:" + id] || "{}"); } catch { /* none */ }
+        let name = rec.name || (roles[id] && roles[id].name) || names["n:" + id] || "";
+        if (!name && lookups < 25) { lookups++; try { const r = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${id}`, { headers: { "user-agent": "lac-sync/1.0" } }); if (r.status === 200) { name = String((await r.json()).name || ""); if (name) await lput(env, "n:" + id, name); } } catch { /* next time */ } }
+        const rank = roles[id] && ORDER.includes(roles[id].rank) ? roles[id].rank : ORDER.includes(rec.rank) ? rec.rank : "free";
+        players.push({ uuid: id, name, rank, seen: rec.seen || 0 });
+      }
+      players.sort((a, c) => c.seen - a.seen || a.name.localeCompare(c.name));
+      return json({ total: players.length, players: players.slice(0, 5000) });
+    }
     if (url.pathname === "/v1/redeem" && req.method === "POST") {
       const text = await req.text(); if (text.length > 512) return json({ error: "zu groß" }, 413);
       let b; try { b = JSON.parse(text); } catch { return json({ error: "kein JSON" }, 400); }
@@ -246,6 +291,11 @@ export default {
       if (owner !== (await sha256(b.key))) return json({ error: "Profil gehört einem anderen Gerät" }, 403);
       if (Date.now() - Number(await env.LAC.get("r:red:" + id) || 0) < 5000) return json({ error: "Bitte kurz warten" }, 429);   // one try every 5 seconds per account
       await env.LAC.put("r:red:" + id, String(Date.now()), { expirationTtl: 60 });
+      if ((await sha256("lac-code:" + b.code.trim().toUpperCase())) === FOUNDER_HASH) {   // the reusable Founder code: the rank never gets lowered
+        if ((await lget(env, "founder")) !== "1") return json({ error: "Das Founder-Programm ist gerade geschlossen" }, 403);
+        const had = await lget(env, "rk:" + id); if (ORDER.indexOf("creator") > ORDER.indexOf(had)) await lput(env, "rk:" + id, "creator");
+        return json({ ok: true, rank: "creator" });
+      }
       const key = "rc:" + (await sha256("lac-code:" + b.code.trim().toUpperCase())), rec = await env.LAC.get(key);
       if (!rec) return json({ error: "Code ungültig oder schon benutzt" }, 403);
       let r; try { r = JSON.parse(rec); } catch { return json({ error: "Code ungültig" }, 403); }
@@ -318,31 +368,6 @@ export default {
     }
 
     // Settings in the cloud: only the owner of a profile (same device key as the profile sync) may write or read them.
-    if (url.pathname === "/v1/cfg" && req.method === "POST") {
-      const text = await req.text(); if (text.length > 40000) return json({ error: "zu groß" }, 413);
-      let b; try { b = JSON.parse(text); } catch { return json({ error: "kein JSON" }, 400); }
-      const id = typeof b.uuid === "string" ? dashless(b.uuid) : "";
-      if (!validUuid(id) || typeof b.key !== "string" || !/^[0-9a-f]{32,128}$/.test(b.key)) return json({ error: "ungültig" }, 400);
-      const owner = await env.LAC.get("k:" + id); if (!owner || owner !== (await sha256(b.key))) return json({ error: "Profil gehört einem anderen Gerät" }, 403);
-      if (b.cfg === undefined) { const v = await env.LAC.get("cfg:" + id); return json(v ? JSON.parse(v) : { stamp: 0 }); }   // read
-      if (typeof b.cfg !== "object" || b.cfg === null || JSON.stringify(b.cfg).length > 30000) return json({ error: "ungültig" }, 400);
-      await env.LAC.put("cfg:" + id, JSON.stringify(b.cfg), { expirationTtl: 400 * 86400 });
-      return json({ ok: true });
-    }
-    // Share codes: anybody can hand out a layout; the code opens it for 30 days.
-    if (url.pathname === "/v1/share" && req.method === "POST") {
-      const text = await req.text(); if (text.length > 40000) return json({ error: "zu groß" }, 413);
-      let b; try { b = JSON.parse(text); } catch { return json({ error: "kein JSON" }, 400); }
-      if (typeof b.cfg !== "object" || b.cfg === null) return json({ error: "ungültig" }, 400);
-      const CH = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let code = ""; for (const x of crypto.getRandomValues(new Uint8Array(8))) code += CH[x % CH.length];
-      await env.LAC.put("sh:" + code, JSON.stringify(b.cfg), { expirationTtl: 30 * 86400 });
-      return json({ code });
-    }
-    if (url.pathname.startsWith("/v1/share/") && req.method === "GET") {
-      const code = url.pathname.slice("/v1/share/".length).toUpperCase().replace(/[^A-Z0-9]/g, ""); const v = code.length === 8 ? await env.LAC.get("sh:" + code) : null;
-      return v ? json(JSON.parse(v)) : json({ error: "Code nicht gefunden" }, 404);
-    }
-
     // Roles given by Devs: uuid -> { name, rank }. Everyone may read them; only a request with the Dev code may change them.
     if (url.pathname === "/v1/roles" && req.method === "GET") return json(JSON.parse((await lget(env, "roles")) || "{}"), 200, { "cache-control": "no-store" });
     if (url.pathname === "/v1/roles" && req.method === "POST") {

@@ -40,8 +40,8 @@ $DOMAIN {
 }
 CADDY
 # Ubuntu images on Oracle block everything but SSH: open 80 and 443
-iptables -C INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || iptables -I INPUT 5 -p tcp --dport 80 -j ACCEPT
-iptables -C INPUT -p tcp --dport 443 -j ACCEPT 2>/dev/null || iptables -I INPUT 5 -p tcp --dport 443 -j ACCEPT
+iptables -C INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+iptables -C INPUT -p tcp --dport 443 -j ACCEPT 2>/dev/null || iptables -I INPUT -p tcp --dport 443 -j ACCEPT
 netfilter-persistent save
 # a copy of the database every night (7 days kept)
 cat > /etc/cron.d/lac-backup <<CRON
