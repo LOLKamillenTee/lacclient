@@ -392,6 +392,11 @@ ipcMain.handle("founder:set", async (_e, on) => {   // a Dev switches it
   const r = await fetch(packs.base() + "/v1/founder", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code, on: !!on, by: "Launcher" }) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return !!j.on;
 });
+ipcMain.handle("players:get", async () => {   // every account that ever had the client open (Dev only)
+  const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
+  const r = await fetch(packs.base() + "/v1/players", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(60000), body: JSON.stringify({ code }) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Server meldet " + r.status); return j;
+});
 ipcMain.handle("devlog:get", async () => {
   const code = store.devCode(uuid()); if (!code) throw new Error("Nur mit Dev-Rang");
   const r = await fetch(packs.base() + "/v1/devlog", { method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(10000), body: JSON.stringify({ code }) });

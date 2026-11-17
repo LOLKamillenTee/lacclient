@@ -702,24 +702,34 @@ function copyKeep(from, to) {
   fs.copyFileSync(from, to);
   try { const st = fs.statSync(from); fs.utimesSync(to, st.atime, st.mtime); } catch { /* time stays */ }
 }
-/** @param changedOnly (running game) only a file that is newer than the common copy goes out: every change of the settings reaches the other profiles within seconds */
-function syncSharedFiles(gameDir, direction, changedOnly) {
+/**
+ * Every profile takes the settings (options.txt, lac.json ...) from the common copy in .lac/shared when it starts, and gives its changes back while it runs and when it closes.
+ * Which side is right is decided by what each profile last synced (a hash kept in the profile's .lac-sync.json), not by file times: a file the profile still has exactly as it synced
+ * it is replaced by the common copy (so a profile that came with its own settings, e.g. from a modpack, or that was not started for a while, simply takes the shared ones), and only a file
+ * this profile has changed itself goes out. (The times were wrong: a modpack's file or a game that saved on start always looked "newer" and overwrote the common settings.)
+ */
+function syncSharedFiles(gameDir, direction) {
   fs.mkdirSync(SHARED(), { recursive: true });
+  const recFile = path.join(gameDir, ".lac-sync.json"); let rec = {};
+  try { rec = JSON.parse(fs.readFileSync(recFile, "utf8")); } catch { /* the first time */ }
   for (const f of SHARED_FILES) {
     const common = path.join(SHARED(), f), mine = path.join(gameDir, f);
     try {
       const hasC = fs.existsSync(common), hasM = fs.existsSync(mine);
       const emptyVsFull = (a, b) => f === "servers.dat" && serverCount(a) === 0 && serverCount(b) > 0;   // a list without servers does not replace one with servers
-      if (direction === "in") {   // the newer copy wins (a profile that was not started for a while does not undo what you set in another one); the first profile to have one seeds it
-        if (hasC && hasM) { const cm = fs.statSync(common).mtimeMs, mm = fs.statSync(mine).mtimeMs; if (mm > cm + 1000 && !emptyVsFull(mine, common)) copyKeep(mine, common); else if (!emptyVsFull(common, mine) || true) { if (!emptyVsFull(common, mine)) copyKeep(common, mine); } }
-        else if (hasC) copyKeep(common, mine); else if (hasM) copyKeep(mine, common);
+      const mineH = hasM ? sha256(mine) : "", changed = hasM && !!rec[f] && mineH !== rec[f];   // this profile changed the file since it last synced
+      if (direction === "in") {
+        if (!hasC) { if (hasM) { copyKeep(mine, common); rec[f] = mineH; } continue; }   // the first profile to have the file seeds the common copy
+        if (changed && !emptyVsFull(mine, common)) { copyKeep(mine, common); rec[f] = sha256(mine); }   // changes that never went out (crash, killed game) are not lost
+        else if (!emptyVsFull(common, mine)) { copyKeep(common, mine); rec[f] = sha256(mine); }
       } else if (hasM) {
-        if (changedOnly && hasC && fs.statSync(mine).mtimeMs <= fs.statSync(common).mtimeMs) continue;
+        if (rec[f] && !changed) continue;   // nothing new in this profile
         if (hasC && emptyVsFull(mine, common)) continue;
-        copyKeep(mine, common);
+        copyKeep(mine, common); rec[f] = mineH;
       }
     } catch { /* a locked file: the next start tries again */ }
   }
+  try { fs.writeFileSync(recFile, JSON.stringify(rec)); } catch { /* read-only folder */ }
 }
 
 async function launch({ profile, auth, send = () => {}, onClose = () => {}, rejoin = null }) {
