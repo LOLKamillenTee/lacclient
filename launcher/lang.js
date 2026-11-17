@@ -5,6 +5,7 @@
     "Code ungültig oder schon benutzt": "Code invalid or already used",
     "Code ungültig": "Invalid code",
     "Dieses Profil wurde schon von einem anderen Gerät beansprucht": "This profile was already claimed by another device",
+    "Auren": "Auras",
     "Mod-Update übersprungen": "Mod update skipped",
     "NBT: kein Compound": "NBT: not a compound",
     "Prüfsumme stimmt nicht": "Checksum does not match",
