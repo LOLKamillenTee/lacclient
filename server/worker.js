@@ -203,7 +203,7 @@ export default {
       if (owner !== keyHash) await env.LAC.put("k:" + claimed, keyHash, { expirationTtl: 180 * 86400 });   // the claim is written once, not by every upload
       const roles = JSON.parse((await lget(env, "roles")) || "{}");
       clean.rank = await authRank(env, claimed, roles);   // whatever rank the client claims is ignored
-      { const e = enforce(clean, clean.rank); e.seen = Date.now(); if (/^[A-Za-z0-9_]{1,16}$/.test(String(body.name || ""))) e.name = String(body.name); await lput(env, "p:" + claimed, JSON.stringify(e)); }   // seen: when this player was last in the game with LAC
+      { const e = enforce(clean, clean.rank); e.seen = Date.now(); if (/^[A-Za-z0-9_]{1,16}$/.test(String(body.name || ""))) e.mcname = String(body.name); await lput(env, "p:" + claimed, JSON.stringify(e)); }   // seen: when this player was last in the game with LAC
       return json({ ok: true, verified: !!proven });
     }
 
@@ -300,7 +300,7 @@ export default {
       for (const id of all) {
         let rec = {}; try { rec = JSON.parse(recs["p:" + id] || "{}"); } catch { /* none */ }
         const own = (v) => (typeof v === "string" ? v : "");   // a profile's "name" can be the name STYLE (an object), not the player name
-        let name = own(rec.name) || own(roles[id] && roles[id].name) || own(names["n:" + id]);
+        let name = own(rec.mcname) || own(rec.name) || own(roles[id] && roles[id].name) || own(names["n:" + id]);
         if (!name && lookups < 25) { lookups++; try { const r = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${id}`, { headers: { "user-agent": "lac-sync/1.0" } }); if (r.status === 200) { name = String((await r.json()).name || ""); if (name) await lput(env, "n:" + id, name); } } catch { /* next time */ } }
         const rank = roles[id] && ORDER.includes(roles[id].rank) ? roles[id].rank : ORDER.includes(rec.rank) ? rec.rank : "free";
         players.push({ uuid: id, name, rank, seen: rec.seen || 0 });
@@ -434,7 +434,8 @@ export default {
       for (const id of ids) {
         if (!got["p:" + id]) continue;
         const given = roles[id] && roles[id].rank, own = got["rk:" + id], rank = ORDER.includes(given) ? given : ORDER.includes(own) ? own : "free";   // the same decision as authRank
-        { const stored = JSON.parse(got["p:" + id]); out[id] = enforce(stored, rank); out[id].age = stored.seen ? Date.now() - stored.seen : -1; }   // age in ms: the game only shows players seen lately
+        { const stored = JSON.parse(got["p:" + id]); if (typeof stored.name === "string") { stored.mcname = stored.mcname || stored.name; stored.name = { color: "#ffffff", color2: "#ffffff", effects: [] }; }   // repairs a name style that an earlier version overwrote with the player name
+        out[id] = enforce(stored, rank); delete out[id].mcname; out[id].age = stored.seen ? Date.now() - stored.seen : -1; }   // age in ms: the game only shows players seen lately
       }
       // While players still have clients that report to the old service (env.FALLBACK, set only on the own server): what is missing or stale here is asked for there, at most every 2 minutes per player
       if (env.FALLBACK) {
