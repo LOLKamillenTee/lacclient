@@ -127,7 +127,7 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:rgba(124,92,255,.
 #skv{border-radius:18px;background:radial-gradient(circle at 50% 40%,#16214a,#0c1020 75%);border:1px solid var(--hair)}
 
 /* dock */
-#dock{position:fixed;right:22px;bottom:20px;z-index:28;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 10px;border-radius:999px;background:var(--glass);border:1px solid var(--hair);box-shadow:0 18px 50px #000a;opacity:0;transform:translateY(16px) scale(.97);pointer-events:none;transition:opacity .45s var(--ease),transform .6s var(--spring)}
+#dock{position:fixed;right:22px;top:72px;z-index:28;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 10px;border-radius:999px;background:var(--glass);border:1px solid var(--hair);box-shadow:0 18px 50px #000a;opacity:0;transform:translateY(-16px) scale(.97);pointer-events:none;transition:opacity .45s var(--ease),transform .6s var(--spring)}
 #dock.on{opacity:1;transform:none;pointer-events:auto}
 #dock img{width:34px;height:34px;border-radius:50%;background:#10101a}.dt{cursor:pointer;min-width:90px;max-width:200px}.dt b{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dt small{display:block;font-size:11px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lbtn.sm{padding:10px 22px;font-size:13px;box-shadow:0 8px 24px rgba(124,92,255,.4)}.lbtn.sm b{font-size:13px}.lbtn.sm svg{width:12px;height:12px}
