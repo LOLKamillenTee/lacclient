@@ -2,7 +2,7 @@
 // Runs in GitHub Actions (.github/workflows/sync-packs.yml, a copy of this file lives in .github/scripts/) and by hand: node tools/sync-packs-gh.js [folder]
 // When the service cannot be reached nothing is touched: the old mirror stays.
 const fs = require("fs"), path = require("path");
-const BASE = process.env.SYNC_URL || "https://lac-sync.lacclient.workers.dev", OUT = path.resolve(process.argv[2] || "packs");
+const BASE = process.env.SYNC_URL || "https://2-29-177-145.sslip.io", OUT = path.resolve(process.argv[2] || "packs");
 const get = async (u, bin) => { const r = await fetch(BASE + u, { signal: AbortSignal.timeout(30000) }); if (!r.ok) throw new Error(u + " -> " + r.status); return bin ? Buffer.from(await r.arrayBuffer()) : r.json(); };
 (async () => {
   let index; try { index = (await get("/v1/packs")).packs; if (!Array.isArray(index)) throw new Error("no list"); } catch (e) { console.log("service not reachable, mirror unchanged:", e.message); return; }
