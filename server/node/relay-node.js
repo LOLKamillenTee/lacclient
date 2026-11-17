@@ -1,22 +1,19 @@
 // The relay rooms of relay.js for the Node server (same protocol, plain `ws` sockets): host control socket, guest sockets, data sockets; nothing is stored.
-import crypto from "node:crypto";
 import { WebSocketServer } from "ws";
 
 const rooms = new Map();   // room name -> { host, guests, data, buf, n }
-const sha256 = (s) => crypto.createHash("sha256").update(s).digest("hex");
 const room = (name) => { let r = rooms.get(name); if (!r) rooms.set(name, (r = { host: null, guests: new Map(), data: new Map(), buf: new Map(), n: 0 })); return r; };
 const quiet = (f) => { try { f(); } catch { /* socket already gone */ } };
 
-/** upgrade requests for /v1/relay: the same checks as the Worker route (room name, profile id + key), then the same pairing as relay.js */
-export function attachRelay(server, LAC) {
+/** upgrade requests for /v1/relay: the Worker route decides (room name, profile id + key, Founder rank for hosts; it answers 426 to a request that is fine but is not a WebSocket), then the same pairing as relay.js */
+export function attachRelay(server, worker, env) {
   const wss = new WebSocketServer({ noServer: true });
   server.on("upgrade", async (req, socket, head) => {
     const url = new URL(req.url, "http://x");
     if (url.pathname !== "/v1/relay") { socket.destroy(); return; }
-    const name = url.searchParams.get("room") || "", id = String(req.headers["x-lac-uuid"] || "").replace(/-/g, "").toLowerCase(), key = String(req.headers["x-lac-key"] || "");
-    const bad = !/^[A-Za-z0-9_-]{16,64}$/.test(name) || !/^[0-9a-f]{32}$/.test(id) || !/^[0-9a-f]{32,128}$/.test(key);
-    const owner = bad ? null : await LAC.get("k:" + id);
-    if (bad || !owner || owner !== sha256(key)) { socket.write("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n"); socket.destroy(); return; }
+    const name = url.searchParams.get("room") || "", h = new Headers(); for (const k of ["x-lac-uuid", "x-lac-key"]) if (typeof req.headers[k] === "string") h.set(k, req.headers[k]);
+    const ok = await worker.fetch(new Request("http://x" + req.url, { headers: h }), env);
+    if (ok.status !== 426) { socket.write("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n"); socket.destroy(); return; }
     wss.handleUpgrade(req, socket, head, (ws) => pair(room(name), name, url.searchParams.get("role"), Number(url.searchParams.get("conn")), ws));
   });
 }

@@ -50,6 +50,6 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(r.status, h); res.end(out);
   } catch (e) { console.error(e); res.writeHead(500, { "content-type": "application/json" }); res.end(JSON.stringify({ error: "Serverfehler" })); }
 });
-attachRelay(server, LAC);
+attachRelay(server, worker, env);
 server.listen(Number(process.env.PORT || 8787), "127.0.0.1", () => console.log("LAC sync service on 127.0.0.1:" + (process.env.PORT || 8787)));
 process.on("SIGTERM", () => { try { db.close(); } catch { /* closed */ } process.exit(0); });

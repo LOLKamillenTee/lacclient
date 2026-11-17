@@ -1,7 +1,7 @@
 // End-to-end check of the relay against `wrangler dev --local --port 8799` (k:<uuid> seeded with sha256(key)):
 // a fake world (echo server) + host side + guest side, the same protocol as LacRelay.java. node relay-test.js
 import net from "node:net";
-const BASE = `ws://127.0.0.1:${process.env.PORT || 8799}/v1/relay`, room = "r".repeat(32);
+const BASE = process.env.BASE || `ws://127.0.0.1:${process.env.PORT || 8799}/v1/relay`, room = "r".repeat(32);
 const headers = { "x-lac-uuid": "0123456789abcdef0123456789abcdef", "x-lac-key": "ab".repeat(32) };
 const open = (q, h = headers) => new Promise((res, rej) => { const w = new WebSocket(`${BASE}?room=${room}&${q}`, { headers: h }); w.binaryType = "arraybuffer"; w.onopen = () => res(w); w.onerror = (e) => rej(new Error("ws error " + q)); });
 const fail = (m) => { console.log("FAIL", m); process.exit(1); };

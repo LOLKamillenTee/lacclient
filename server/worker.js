@@ -241,12 +241,14 @@ export default {
     }
     // Hosted worlds without a server or an open port: both sides connect out to a relay room (see relay.js). Only a LAC account (device key) may use it, the room name is the secret.
     if (url.pathname === "/v1/relay") {
-      if (req.headers.get("upgrade") !== "websocket") return json({ error: "WebSocket nötig" }, 426);
       const room = url.searchParams.get("room") || "";
       if (!/^[A-Za-z0-9_-]{16,64}$/.test(room)) return json({ error: "Raum ungültig" }, 400);
       const rid = dashless(req.headers.get("x-lac-uuid") || ""), rkey = req.headers.get("x-lac-key") || "";
       if (!validUuid(rid) || !/^[0-9a-f]{32,128}$/.test(rkey)) return json({ error: "ungültig" }, 400);
       const owner = await env.LAC.get("k:" + rid); if (!owner || owner !== (await sha256(rkey))) return json({ error: "Profil gehört einem anderen Gerät" }, 403);
+      // only a Founder (Creator) or a Dev opens a room; anybody with a profile may join one
+      if (url.searchParams.get("role") === "host" && !["creator", "dev"].includes(await authRank(env, rid, JSON.parse((await lget(env, "roles")) || "{}")))) return json({ error: "Nur Founder können ihre Welt teilen" }, 403);
+      if (req.headers.get("upgrade") !== "websocket") return json({ error: "WebSocket nötig" }, 426);   // (the Node server asks this way whether a request is allowed)
       return env.RELAY.get(env.RELAY.idFromName(room)).fetch(req);
     }
     // The Founder program: whoever enters the one reusable Founder code gets the Creator rank ("Founder") for good, as long as a Dev has the program switched on (GET = is it on).
