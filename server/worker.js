@@ -240,6 +240,28 @@ export default {
       return json({ ok: true, rank: b.rank, codes: out });
     }
     // Hosted worlds without a server or an open port: both sides connect out to a relay room (see relay.js). Only a LAC account (device key) may use it, the room name is the secret.
+    // Gifts of cosmetics (permanent): a Dev adds or removes ids for an account (g:<uuid>), the account's client fetches them with its own key and keeps them as owned.
+    if (url.pathname === "/v1/gift" && req.method === "POST") {
+      const text = await req.text(); if (text.length > 8192) return json({ error: "zu groß" }, 413);
+      let b; try { b = JSON.parse(text); } catch { return json({ error: "kein JSON" }, 400); }
+      if (typeof b.code !== "string" || (await sha256("lac-code:" + b.code)) !== DEV_HASH) return json({ error: "kein Dev-Rang" }, 403);
+      const id = dashless(String(b.uuid || "")); if (!validUuid(id)) return json({ error: "Konto ungültig" }, 400);
+      const known = new Set(ITEMS.map((i) => i.id)); let cur; try { cur = JSON.parse((await lget(env, "g:" + id)) || "[]"); } catch { cur = []; } if (!Array.isArray(cur)) cur = [];
+      const before = cur.length;
+      if (Array.isArray(b.add)) for (const x of b.add) if (known.has(x) && !cur.includes(x)) cur.push(x);
+      if (Array.isArray(b.remove)) cur = cur.filter((x) => !b.remove.includes(x));
+      if (cur.length !== before || Array.isArray(b.remove)) await lput(env, "g:" + id, JSON.stringify(cur));
+      return json({ items: cur, catalog: ITEMS.map((i) => ({ id: i.id, type: i.type })) });
+    }
+    if (url.pathname === "/v1/gifts" && req.method === "POST") {
+      const text = await req.text(); if (text.length > 512) return json({ error: "zu groß" }, 413);
+      let b; try { b = JSON.parse(text); } catch { return json({ error: "kein JSON" }, 400); }
+      const id = typeof b.uuid === "string" ? dashless(b.uuid) : "";
+      if (!validUuid(id) || typeof b.key !== "string" || !/^[0-9a-f]{32,128}$/.test(b.key)) return json({ error: "ungültig" }, 400);
+      const owner = await env.LAC.get("k:" + id); if (!owner || owner !== (await sha256(b.key))) return json({ error: "Profil gehört einem anderen Gerät" }, 403);
+      let cur; try { cur = JSON.parse((await lget(env, "g:" + id)) || "[]"); } catch { cur = []; }
+      return json({ items: Array.isArray(cur) ? cur : [] });
+    }
     if (url.pathname === "/v1/relay") {
       const room = url.searchParams.get("room") || "";
       if (!/^[A-Za-z0-9_-]{16,64}$/.test(room)) return json({ error: "Raum ungültig" }, 400);
@@ -282,8 +304,10 @@ export default {
         const rank = roles[id] && ORDER.includes(roles[id].rank) ? roles[id].rank : ORDER.includes(rec.rank) ? rec.rank : "free";
         players.push({ uuid: id, name, rank, seen: rec.seen || 0 });
       }
-      players.sort((a, c) => c.seen - a.seen || a.name.localeCompare(c.name));
-      return json({ total: players.length, players: players.slice(0, 5000) });
+      // an id that has no Minecraft name (Mojang does not know it, nobody gave it a role) is a test account, not a player
+      const real = players.filter((p) => p.name);
+      real.sort((a, c) => c.seen - a.seen || a.name.localeCompare(c.name));
+      return json({ total: real.length, players: real.slice(0, 5000) });
     }
     if (url.pathname === "/v1/redeem" && req.method === "POST") {
       const text = await req.text(); if (text.length > 512) return json({ error: "zu groß" }, 413);
