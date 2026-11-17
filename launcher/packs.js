@@ -5,7 +5,7 @@ const core = require("./core");
 const share = require("./share");
 const store = require("./store");
 
-const DEFAULT_BASE = "https://lac-sync.lacclient.workers.dev";
+const DEFAULT_BASE = "https://2-29-177-145.sslip.io";
 const ICONS = () => path.join(core.ROOT, "icons");
 const REQ = () => path.join(core.ROOT, "requests");
 
