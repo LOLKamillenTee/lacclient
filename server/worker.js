@@ -276,7 +276,7 @@ export default {
       let lookups = 0; const players = [];
       for (const id of all) {
         let rec = {}; try { rec = JSON.parse(recs["p:" + id] || "{}"); } catch { /* none */ }
-        let name = rec.name || (roles[id] && roles[id].name) || names["n:" + id] || "";
+        let name = String(rec.name || (roles[id] && roles[id].name) || names["n:" + id] || "");   // always text: the list is sorted by it
         if (!name && lookups < 25) { lookups++; try { const r = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${id}`, { headers: { "user-agent": "lac-sync/1.0" } }); if (r.status === 200) { name = String((await r.json()).name || ""); if (name) await lput(env, "n:" + id, name); } } catch { /* next time */ } }
         const rank = roles[id] && ORDER.includes(roles[id].rank) ? roles[id].rank : ORDER.includes(rec.rank) ? rec.rank : "free";
         players.push({ uuid: id, name, rank, seen: rec.seen || 0 });
