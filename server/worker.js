@@ -91,7 +91,7 @@ const CHAT_FREE = ["#ffffff", "#aaaaaa", "#55ffff", "#55ff55"], CHAT_PRO = [...C
 const chatOk = (c, rank) => rank === "dev" || ((rank === "plus" || rank === "creator") && !isRed(c)) || (rank === "pro" && CHAT_PRO.includes(c)) || (rank === "free" && CHAT_FREE.includes(c));
 function enforce(p, rank) {
   const o = { ...p, rank };
-  if (o.chat && !chatOk(o.chat, rank)) o.chat = "";
+  o.chat = "";   // chat colours were removed: only the name and the badge are styled
   if (rank === "free") o.styled = false;
   styleRules(o, rank);
   if (rank !== "dev") for (const k of ["tag", "name"]) if (o[k] && (o[k].effects || []).includes("fire")) o[k] = { ...o[k], effects: o[k].effects.filter((e) => e !== "fire") };   // the Fire effect is for Devs only

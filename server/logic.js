@@ -1,6 +1,6 @@
 // Validation for the public LAC profile: what other players are allowed to see. Pure functions, no I/O (tested by test.js).
-export const NAME_FX = ["shaking", "waving", "iterating", "flipping", "skewing", "growing", "gradient", "rainbow", "metallic", "fade", "shimmer", "blinking", "chromatic", "fire", "outline", "glowing", "aurora", "sweep", "breathe", "neon"];
-export const BADGE_FX = ["shaking", "waving", "flipping", "gradient", "rainbow", "metallic", "fade", "shimmer", "blinking", "chromatic", "fire", "glowing", "aurora", "sweep", "breathe", "neon"];
+export const NAME_FX = ["shaking", "waving", "iterating", "flipping", "skewing", "growing", "gradient", "rainbow", "metallic", "fade", "shimmer", "blinking", "chromatic", "fire", "outline", "glowing", "aurora", "sweep", "breathe", "neon", "sunset", "ocean", "galaxy", "toxic", "sparkle", "heartbeat", "bouncing"];
+export const BADGE_FX = ["shaking", "waving", "flipping", "gradient", "rainbow", "metallic", "fade", "shimmer", "blinking", "chromatic", "fire", "glowing", "aurora", "sweep", "breathe", "neon", "sunset", "ocean", "galaxy", "toxic", "sparkle", "heartbeat", "bouncing"];
 const EXCL = [["gradient", "rainbow", "metallic", "chromatic", "fire", "aurora"], ["shaking", "waving", "flipping", "iterating"], ["skewing", "growing"], ["fade", "blinking", "glowing", "breathe"], ["glowing", "outline", "neon"]];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
